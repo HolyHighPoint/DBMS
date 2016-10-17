@@ -2,42 +2,133 @@
 #include <fileio/FileManager.h>
 #include <utils/pagedef.h>
 #include <iostream>
-
+#include "rm_filehandle.h"
+#include "rm_manager.h"
+#include "rm_record.h"
+#include <map>
 using namespace std;
+char str[1024], str1[1024], str2[1024];
+void randStr(int length)
+{
+    for(int i=0;i<length;i++)str[i] = rand()%26+'a';
+    str[length] = 0;
+}
+bool operator < (const RID &a, const RID &b)
+{
+    if(a.pageId == b.pageId)return a.rowId < b.rowId;else return a.pageId < b.pageId;
+}
+
+bool operator == (const RID &a, const RID &b)
+{
+    return a.pageId == b.pageId && a.rowId == b.rowId;
+}
 
 int main()
 {
-    MyBitMap::initConst();   //新加的初始化
+    srand(time(NULL));
+    MyBitMap::initConst();
     FileManager *fm = new FileManager();
-    BufPageManager* bpm = new BufPageManager(fm);
-    fm->createFile("testfile.txt"); //新建文件
-    int fileID;
-    fm->openFile("testfile.txt", fileID); //打开文件，fileID是返回的文件id
-    for (int pageID = 0; pageID < 1000; ++ pageID)
+    BufPageManager *bpm = new BufPageManager(fm);
+    RM_Manager *rmm = new RM_Manager(fm, bpm);
+    RM_FileHandle *rmfh = new RM_FileHandle();
+    rmm->CreateFile("testfile.txt");
+    rmm->OpenFile("testfile.txt", rmfh);
+    map<RID, RM_Record> sta;
+    for(int i=0;i<200000;i++)
     {
-        int index;
-        //为pageID获取一个缓存页
-        BufType b = bpm->allocPage(fileID, pageID, index, false);
-        //注意，在allocPage或者getPage后，千万不要进行delete[] b这样的操作
-        //内存的分配和管理都在BufPageManager中做好，不需要关心，如果自行释放会导致问题
-        b[0] = pageID; //对缓存页进行写操作
-        b[1] = fileID;
-        bpm->markDirty(index); //标记脏页
-        //在重新调用allocPage获取另一个页的数据时并没有将原先b指向的内存释放掉
-        //因为内存管理都在BufPageManager中做好了
+        if(rand()%3 == 0)
+        {
+            for(auto &k : sta)
+            {
+                if(rand()%100 == 0)
+                {
+                    rmfh->DeleteRec(k.first);
+                    sta.erase(sta.find(k.first));
+                    break;
+                }
+            }
+        }
+        else
+        {
+            RM_Record a;
+            RID rid;
+            a.push_back(new RM_Type_int(rand()%2, rand()%RAND_MAX));
+            int len = rand()%65;randStr(len);
+            a.push_back(new RM_Type_varchar<>(rand()%2, str, len));
+            a.push_back(new RM_Type_int(rand()%2, rand()%RAND_MAX));
+            len = rand()%65;randStr(len);
+            a.push_back(new RM_Type_varchar<>(rand()%2, str, len));
+            a.push_back(new RM_Type_int(rand()%2, rand()%RAND_MAX));
+            a.push_back(new RM_Type_int(rand()%2, rand()%RAND_MAX));
+            len = rand()%65;randStr(len);
+            a.push_back(new RM_Type_varchar<>(rand()%2, str, len));
+            a.push_back(new RM_Type_varchar<>(rand()%2, str, len));
+            if(rmfh->InsertRec(a, rid) == Error)
+            {
+                rmfh->InsertRec(a, rid);
+                printf("Error\n");
+                return -1;
+            }
+            sta.insert(make_pair(rid, a));
+        }
     }
-    for (int pageID = 0; pageID < 1000; ++ pageID)
+    RM_Record b;
+    b.push_back(new RM_Type_int());
+    b.push_back(new RM_Type_varchar<>());
+    b.push_back(new RM_Type_int());
+    b.push_back(new RM_Type_varchar<>());
+    b.push_back(new RM_Type_int());
+    b.push_back(new RM_Type_int());
+    b.push_back(new RM_Type_varchar<>());
+    b.push_back(new RM_Type_varchar<>());
+    int i=0;
+    for(auto k : sta)
     {
-        int index;
-        //为pageID获取一个缓存页
-        BufType b = bpm->getPage(fileID, pageID, index);
-        //注意，在allocPage或者getPage后，千万不要进行delete[] b这样的操作
-        //内存的分配和管理都在BufPageManager中做好，不需要关心，如果自行释放会导致问题
-        cout << b[0] << ":" << b[1] << endl;        //读取缓存页中第一个整数
-        bpm->access(index); //标记访问
+        rmfh->GetRec(k.first, b);
+        Byte x = k.second.toByte(), y = b.toByte();
+        if(x.length != y.length)
+        {
+            k.second.print();
+            b.print();
+            printf("Error %d\n", i);
+            return -1;
+        }
+        for(int i=0;i<x.length;i++)if(x.a[i] != y.a[i])
+        {
+            k.second.print();
+            b.print();
+            printf("Error %d\n", i);
+            return -1;
+        }
+        i++;
     }
-    //程序结束前可以调用BufPageManager的某个函数将缓存中的内容写回
-    //具体的函数大家可以看看ppt或者程序的注释
-    bpm->close();
-    return 0;
+    auto list = rmfh->ListRec();
+    i=0;
+    for(auto k : list)
+    {
+        if(sta.find(k.first) == sta.end())
+        {
+            printf("Error %d %d\n", list.size(), sta.size());
+            return -1;
+        }
+        b = sta.find(k.first)->second;
+        Byte x = k.second.toByte(), y = b.toByte();
+        if(x.length != y.length)
+        {
+            k.second.print();
+            b.print();
+            printf("Error %d\n", i);
+            return -1;
+        }
+        for(int i=0;i<x.length;i++)if(x.a[i] != y.a[i])
+        {
+            k.second.print();
+            b.print();
+            printf("Error %d\n", i);
+            return -1;
+        }
+        i++;
+    }
+    printf("Accept\n");
+    rmm->CloseFile(rmfh);
 }

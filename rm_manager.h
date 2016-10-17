@@ -1,39 +1,60 @@
 #ifndef RM_MANAGER_H
 #define RM_MANAGER_H
-#include "rc.h";
-#include <stdio.h>
-class RM_Manager {
+#include "rc.h"
+#include <bufmanager/BufPageManager.h>
+#include <fileio/FileManager.h>
+#include "rm_filehandle.h"
+class RM_Manager
+{
 private:
-	FileManager *fm;
-	BufPageManager* bpm;
+    FileManager *fm;
+    BufPageManager *bpm;
 public:
-	RM_Manager(FileManager &pfm) {
-		fm = pfm;
-		bpm = new BufPageManager(fm);
-	};
-	~RM_Manager() {
-		bpm->close();
-	};
-	RC CreateFile(const char *fileName, int recordSize) {
-		if (fm->createFile(fileName)) { return Success; }
-		else { return Error; }
-	};
-	RC DestroyFile(const char *fileName) {
-		if (remove(fileName) == 0) { return Success; }
-		else { return Error; }
-	};
-	RC OpenFile(const char *fileName, RM_FileHandle &fileHandle) {
-		int fileId;
-		bool flag;
-		flag = fm->openFile(fileName, fileId);
-		fileHandle->setFileId(fileId);// TBD
-		if (flag) { return Success; }
-		else { return Error; }
-	};
-	RC CloseFile(RM_FileHandle &fileHandle) {
-		fileId = fileHandle->getFileId();//TBD
-		if (fm->closeFile(fileId) == 0) { return Success;}
-		else { return Error; }
-	};
+    RM_Manager(FileManager *_fm, BufPageManager *_bpm)
+    {
+        fm = _fm;
+        bpm = _bpm;
+    }
+    ~RM_Manager()
+    {
+    }
+    RC CreateFile(const char *fileName)
+    {
+        if (fm->createFile(fileName))
+        {
+            return Success;
+        }
+        else
+        {
+            return Error;
+        }
+    }
+    RC OpenFile(const char *fileName, RM_FileHandle *fileHandle)
+    {
+        int fileId;
+        bool flag = fm->openFile(fileName, fileId);
+        fileHandle->init(bpm, fileId);
+        if (flag)
+        {
+            return Success;
+        }
+        else
+        {
+            return Error;
+        }
+    }
+    RC CloseFile(RM_FileHandle *fileHandle)
+    {
+        int fileId = fileHandle->getFileId();
+        bpm->close();
+        if (fm->closeFile(fileId) == 0)
+        {
+            return Success;
+        }
+        else
+        {
+            return Error;
+        }
+    }
 };
 #endif
