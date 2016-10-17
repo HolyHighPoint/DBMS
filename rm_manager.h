@@ -34,6 +34,7 @@ public:
         int fileId;
         bool flag = fm->openFile(fileName, fileId);
         fileHandle->init(bpm, fileId);
+
         if (flag)
         {
             return Success;
@@ -47,6 +48,7 @@ public:
     {
         int fileId = fileHandle->getFileId();
         bpm->close();
+
         if (fm->closeFile(fileId) == 0)
         {
             return Success;

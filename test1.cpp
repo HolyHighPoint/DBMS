@@ -27,15 +27,19 @@ int main()
     a.push_back(new RM_Type_varchar<>(true));
     rmfh->InsertRec(a, rid);
     Byte byte = a.toByte();
-    for(int i=0;i<byte.length;i++)
+
+    for (int i = 0; i < byte.length; i++)
     {
         printf("%02d ", i);
     }
+
     printf("\n");
-    for(int i=0;i<byte.length;i++)
+
+    for (int i = 0; i < byte.length; i++)
     {
         printf("%02x ", byte.a[i]);
     }
+
     printf("\n");
     b.push_back(new RM_Type_int());
     b.push_back(new RM_Type_varchar<>());

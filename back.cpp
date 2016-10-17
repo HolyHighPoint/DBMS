@@ -13,6 +13,7 @@ int main()
     fm->createFile("testfile.txt"); //新建文件
     int fileID;
     fm->openFile("testfile.txt", fileID); //打开文件，fileID是返回的文件id
+
     for (int pageID = 0; pageID < 1000; ++ pageID)
     {
         int index;
@@ -26,6 +27,7 @@ int main()
         //在重新调用allocPage获取另一个页的数据时并没有将原先b指向的内存释放掉
         //因为内存管理都在BufPageManager中做好了
     }
+
     for (int pageID = 0; pageID < 1000; ++ pageID)
     {
         int index;
@@ -36,6 +38,7 @@ int main()
         cout << b[0] << ":" << b[1] << endl;        //读取缓存页中第一个整数
         bpm->access(index); //标记访问
     }
+
     //程序结束前可以调用BufPageManager的某个函数将缓存中的内容写回
     //具体的函数大家可以看看ppt或者程序的注释
     bpm->close();

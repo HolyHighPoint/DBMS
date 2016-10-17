@@ -8,7 +8,7 @@ enum RC
 struct RID
 {
     int pageId, rowId;
-    RID(int _pageId=0, int _rowId=0)
+    RID(int _pageId = 0, int _rowId = 0)
     {
         pageId = _pageId;
         rowId = _rowId;
