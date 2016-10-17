@@ -6,6 +6,7 @@
 #include "rm_manager.h"
 #include "rm_record.h"
 #include <map>
+#include <ctime>
 using namespace std;
 char str[1024], str1[1024], str2[1024];
 void randStr(int length)
