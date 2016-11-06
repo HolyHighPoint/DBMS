@@ -67,13 +67,12 @@ template<int size = 64>
 class RM_Type_varchar : public RM_Type
 {
 private:
-    char *str;
+    char str[size+1];
     int length;
 public:
     RM_Type_varchar(bool _null = true, const char *_str = "", int _length = 0)
         : RM_Type(RM_Type::var, _null)
     {
-        str = new char[size + 1];
         memset(str, 0, sizeof(char)*size);
         length = _length;
         memcpy(str, _str, length * sizeof(char));
