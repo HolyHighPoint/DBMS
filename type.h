@@ -28,7 +28,7 @@ class Type_tinyint : public Type
 private:
     int value;
 public:
-    Type_tinyint(bool _null = true, int t=0)
+    Type_tinyint(bool _null = true, int t = 0)
         : Type(Type::sta, _null), value(t)
     {
     }
@@ -36,11 +36,11 @@ public:
     {
         return sizeof(char) / sizeof(uch);
     }
-    
+
     Byte toByte()
     {
         if (null) value = 0;
-        
+
         return Byte(sizeof(char) / sizeof(uch), (uch *)&value);
     }
     void fromByte(Byte byte)
@@ -52,7 +52,7 @@ public:
         if (null)printf("%d ", 0);
         else printf("%d ", value);
     }
-    
+
     int getValue()
     {
         return value;
@@ -61,17 +61,20 @@ public:
     {
         value = t;
     }
-    
-    bool operator < (const Type_int &t) const
+
+    bool operator < (const Type_tinyint &t) const
     {
-        if(null && t.null)return false;
-        if(null != t.null)return null < t.null;
+        if (null && t.null)return false;
+
+        if (null != t.null)return null < t.null;
+
         return value < t.value;
     }
 
-    bool operator == (const Type_int &t) const
+    bool operator == (const Type_tinyint &t) const
     {
-        if(null && t.null) return true;
+        if (null && t.null) return true;
+
         return value == t.value;
     }
 };
