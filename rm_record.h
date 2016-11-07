@@ -2,16 +2,16 @@
 #define RM_RECORD_H
 #include "rc.h"
 #include <vector>
-#include "rm_type.h"
+#include "type.h"
 #include <cstdio>
 #include <bitset>
 #include <typeinfo>
 class RM_Record
 {
 private:
-    std::vector<RM_Type *> sta, var, total;
+    std::vector<Type *> sta, var, total;
 public:
-    void push_back(RM_Type *value)
+    void push_back(Type *value)
     {
         if (value->sizeType == value->sta)sta.push_back(value);
         else var.push_back(value);

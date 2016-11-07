@@ -5,6 +5,7 @@
 #include "rm_filehandle.h"
 #include "rm_manager.h"
 #include "rm_record.h"
+#include "ix_manager.h"
 #include <map>
 #include <ctime>
 using namespace std;
@@ -38,7 +39,7 @@ int main()
     rmm->OpenFile("testfile.txt", rmfh);
     map<RID, RM_Record> sta;
 
-    for (int i = 0; i < 200000; i++)
+    for (int i = 0; i < 100000; i++)
     {
         if (rand() % 3 == 0)
         {
@@ -56,20 +57,20 @@ int main()
         {
             RM_Record a;
             RID rid;
-            a.push_back(new RM_Type_int(rand() % 2, rand() % RAND_MAX));
+            a.push_back(new Type_int(rand() % 2, rand() % RAND_MAX));
             int len = rand() % 65;
             randStr(len);
-            a.push_back(new RM_Type_varchar<>(rand() % 2, str, len));
-            a.push_back(new RM_Type_int(rand() % 2, rand() % RAND_MAX));
+            a.push_back(new Type_varchar<>(rand() % 2, str, len));
+            a.push_back(new Type_int(rand() % 2, rand() % RAND_MAX));
             len = rand() % 65;
             randStr(len);
-            a.push_back(new RM_Type_varchar<>(rand() % 2, str, len));
-            a.push_back(new RM_Type_int(rand() % 2, rand() % RAND_MAX));
-            a.push_back(new RM_Type_int(rand() % 2, rand() % RAND_MAX));
+            a.push_back(new Type_varchar<>(rand() % 2, str, len));
+            a.push_back(new Type_int(rand() % 2, rand() % RAND_MAX));
+            a.push_back(new Type_int(rand() % 2, rand() % RAND_MAX));
             len = rand() % 65;
             randStr(len);
-            a.push_back(new RM_Type_varchar<>(rand() % 2, str, len));
-            a.push_back(new RM_Type_varchar<>(rand() % 2, str, len));
+            a.push_back(new Type_varchar<>(rand() % 2, str, len));
+            a.push_back(new Type_varchar<>(rand() % 2, str, len));
 
             if (rmfh->InsertRec(a, rid) == Error)
             {
@@ -83,14 +84,14 @@ int main()
     }
 
     RM_Record b;
-    b.push_back(new RM_Type_int());
-    b.push_back(new RM_Type_varchar<>());
-    b.push_back(new RM_Type_int());
-    b.push_back(new RM_Type_varchar<>());
-    b.push_back(new RM_Type_int());
-    b.push_back(new RM_Type_int());
-    b.push_back(new RM_Type_varchar<>());
-    b.push_back(new RM_Type_varchar<>());
+    b.push_back(new Type_int());
+    b.push_back(new Type_varchar<>());
+    b.push_back(new Type_int());
+    b.push_back(new Type_varchar<>());
+    b.push_back(new Type_int());
+    b.push_back(new Type_int());
+    b.push_back(new Type_varchar<>());
+    b.push_back(new Type_varchar<>());
     int i = 0;
 
     for (auto k : sta)

@@ -1,10 +1,10 @@
-#ifndef RM_TYPE_H
-#define RM_TYPE_H
+#ifndef TYPE_H
+#define TYPE_H
 #include "byte.h"
 #include <cstring>
 #include <cstdio>
 
-class RM_Type
+class Type
 {
 public:
     enum SizeType
@@ -17,19 +17,19 @@ public:
     virtual void fromByte(Byte byte) = 0;
     virtual int getSize() = 0;
     virtual void print() = 0;
-    RM_Type(SizeType _sizeType, bool _null)
+    Type(SizeType _sizeType, bool _null)
         : sizeType(_sizeType), null(_null)
     {
     }
 };
 
-class RM_Type_int : public RM_Type
+class Type_int : public Type
 {
 private:
     int value;
 public:
-    RM_Type_int(bool _null = true, int t = 0)
-        : RM_Type(RM_Type::sta, _null), value(t)
+    Type_int(bool _null = true, int t = 0)
+        : Type(Type::sta, _null), value(t)
     {
     }
     int getSize()
@@ -61,24 +61,37 @@ public:
     {
         value = t;
     }
+
+    bool operator < (const Type_int &t) const
+    {
+        if(null && t.null)return false;
+        if(null != t.null)return null < t.null;
+        return value < t.value;
+    }
+
+    bool operator == (const Type_int &t) const
+    {
+        if(null && t.null) return true;
+        return value == t.value;
+    }
 };
 
 template<int size = 64>
-class RM_Type_varchar : public RM_Type
+class Type_varchar : public Type
 {
 private:
-    char str[size+1];
+    char str[size + 1];
     int length;
 public:
-    RM_Type_varchar(bool _null = true, const char *_str = "", int _length = 0)
-        : RM_Type(RM_Type::var, _null)
+    Type_varchar(bool _null = true, const char *_str = "", int _length = 0)
+        : Type(Type::var, _null)
     {
         memset(str, 0, sizeof(char)*size);
         length = _length;
         memcpy(str, _str, length * sizeof(char));
         str[length] = '\000';
     }
-    ~RM_Type_varchar()
+    ~Type_varchar()
     {
         if (str != NULL)delete [] str;
     }
@@ -115,6 +128,18 @@ public:
         length = _length;
         memcpy(str, _str, length * sizeof(char));
         str[length] = '\000';
+    }
+    bool operator < (const Type_varchar &t) const
+    {
+        if(null && t.null)return false;
+        if(null != t.null)return null < t.null;
+        return strcmp(str, t.str) < 0;
+    }
+
+    bool operator == (const Type_varchar &t) const
+    {
+        if(null && t.null) return true;
+        return strcmp(str, t.str) == 0;
     }
 };
 

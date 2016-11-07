@@ -13,5 +13,9 @@ struct RID
         pageId = _pageId;
         rowId = _rowId;
     }
+    bool operator < (const RID &a)
+    {
+        if(pageId == a.pageId)return rowId < a.rowId;else return rowId < a.rowId;
+    }
 };
 #endif

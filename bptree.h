@@ -1,21 +1,21 @@
-#ifndef BPT_H
-#define BPT_H
+#ifndef BPTREE_H
+#define BPTREE_H
 
-#include <cstddef>
-#include <cstdio>
-#include <cstdlib>
 #include <cassert>
+#include <cstdio>
 #include <cstring>
-#include <list>
 #include <algorithm>
 
+#include "bptree.h"
+#include "type.h"
 
-namespace bpt {
+namespace bptree
+{
 
 /* predefined B+ info */
-#define BP_ORDER 20
+const int BP_ORDER = 20;
 /* offsets */
-#define OFFSET_META 0
+const int OFFSET_META = 0;
 #define OFFSET_BLOCK OFFSET_META + sizeof(meta_t)
 #define SIZE_NO_CHILDREN sizeof(leaf_node_t) - BP_ORDER * sizeof(record_t)
 
@@ -29,39 +29,45 @@ namespace bpt {
 
 /* key/value type */
 //typedef int value_t;
-struct key_str {
-    char k[16];
+//struct key_str
+//{
+//    char k[16];
 
-    key_str(const char *str = "")
-    {
-        bzero(k, sizeof(k));
-        strcpy(k, str);
-    }
-    bool operator < (const key_str &t) const
-    {
-        int x = strlen(k) - strlen(t.k);
-        if(!x)return strcmp(k, t.k) < 0;else return x < 0;
-    }
-    
-    bool operator == (const key_str &t) const
-    {
-        return strcmp(k, t.k) == 0;
-    }
-};
+//    key_str(const char *str = "")
+//    {
+//        bzero(k, sizeof(k));
+//        strcpy(k, str);
+//    }
+//    bool operator < (const key_str &t) const
+//    {
+//        int x = strlen(k) - strlen(t.k);
+
+//        if (!x)return strcmp(k, t.k) < 0;
+//        else return x < 0;
+//    }
+
+//    bool operator == (const key_str &t) const
+//    {
+//        return strcmp(k, t.k) == 0;
+//    }
+//};
 
 
 /* the encapulated B+ tree */
 template<typename key_t, typename value_t>
-class bplus_tree {
+class bplus_tree
+{
 public:
 
-    static int keycmp(const key_t &a, const key_t &b) {
-        if(a < b) return -1;else if(a == b)return 0;else return 1;
-        int x = strlen(a.k) - strlen(b.k);
-        return x == 0 ? strcmp(a.k, b.k) : x;
+    static int keycmp(const key_t &a, const key_t &b)
+    {
+        if (a < b) return -1;
+        else if (a == b)return 0;
+        else return 1;
     }
     /* meta information of B+ tree */
-    typedef struct {
+    typedef struct
+    {
         size_t order; /* `order` of B+ tree */
         size_t value_size; /* size of value */
         size_t key_size;   /* size of key */
@@ -72,36 +78,40 @@ public:
         off_t root_offset; /* where is the root of internal nodes */
         off_t leaf_offset; /* where is the first leaf */
     } meta_t;
-    
+
     /* internal nodes' index segment */
-    struct index_t {
+    struct index_t
+    {
         key_t key;
         off_t child; /* child's offset */
     };
-    
+
     /***
      * internal node block
      ***/
-    struct internal_node_t {
-        typedef index_t * child_t;
-    
+    struct internal_node_t
+    {
+        typedef index_t *child_t;
+
         off_t parent; /* parent node offset */
         off_t next;
         off_t prev;
         size_t n; /* how many children */
         index_t children[BP_ORDER];
     };
-    
+
     /* the final record of value */
-    struct record_t {
+    struct record_t
+    {
         key_t key;
         value_t value;
     };
-    
+
     /* leaf node block */
-    struct leaf_node_t {
+    struct leaf_node_t
+    {
         typedef record_t *child_t;
-    
+
         off_t parent; /* parent node offset */
         off_t next;
         off_t prev;
@@ -114,282 +124,323 @@ public:
     {
         bzero(path, sizeof(path));
         strcpy(path, p);
-    
+
         if (!force_empty)
+
             // read tree from file
             if (map(&meta, OFFSET_META) != 0)
                 force_empty = true;
-    
-        if (force_empty) {
+
+        if (force_empty)
+        {
             open_file("w+"); // truncate file
-    
+
             // create empty tree if file doesn't exist
             init_from_empty();
             close_file();
         }
     }
     /* abstract operations */
-    int search(const key_t& key, value_t *value) const
+    int search(const key_t &key, value_t *value) const
     {
         leaf_node_t leaf;
         map(&leaf, search_leaf(key));
-    
+
         // finding the record
         record_t *record = find(leaf, key);
-        if (record != leaf.children + leaf.n) {
+
+        if (record != leaf.children + leaf.n)
+        {
             // always return the lower bound
             *value = record->value;
-    
+
             return keycmp(record->key, key);
-        } else {
+        }
+        else
+        {
             return -1;
         }
     }
-    
+
     int search_range(key_t *left, const key_t &right,
-                                 value_t *values, size_t max, bool *next) const
+                     value_t *values, size_t max, bool *next) const
     {
         if (left == NULL || keycmp(*left, right) > 0)
             return -1;
-    
+
         off_t off_left = search_leaf(*left);
         off_t off_right = search_leaf(right);
         off_t off = off_left;
         size_t i = 0;
         record_t *b, *e;
-    
+
         leaf_node_t leaf;
-        while (off != off_right && off != 0 && i < max) {
+
+        while (off != off_right && off != 0 && i < max)
+        {
             map(&leaf, off);
-    
+
             // start point
-            if (off_left == off) 
+            if (off_left == off)
                 b = find(leaf, *left);
             else
                 b = begin(leaf);
-    
+
             // copy
             e = leaf.children + leaf.n;
+
             for (; b != e && i < max; ++b, ++i)
                 values[i] = b->value;
-    
+
             off = leaf.next;
         }
-    
+
         // the last leaf
-        if (i < max) {
+        if (i < max)
+        {
             map(&leaf, off_right);
-    
+
             b = find(leaf, *left);
             e = std::upper_bound(begin(leaf), end(leaf), right);
+
             for (; b != e && i < max; ++b, ++i)
                 values[i] = b->value;
         }
-    
+
         // mark for next iteration
-        if (next != NULL) {
-            if (i == max && b != e) {
+        if (next != NULL)
+        {
+            if (i == max && b != e)
+            {
                 *next = true;
                 *left = b->key;
-            } else {
+            }
+            else
+            {
                 *next = false;
             }
         }
-    
+
         return i;
     }
-    
-    int remove(const key_t& key)
+
+    int remove(const key_t &key)
     {
         internal_node_t parent;
         leaf_node_t leaf;
-    
+
         // find parent node
         off_t parent_off = search_index(key);
         map(&parent, parent_off);
-    
+
         // find current node
         index_t *where = find(parent, key);
         off_t offset = where->child;
         map(&leaf, offset);
-    
+
         // verify
         if (!std::binary_search(begin(leaf), end(leaf), key))
             return -1;
-    
+
         size_t min_n = meta.leaf_node_num == 1 ? 0 : meta.order / 2;
         assert(leaf.n >= min_n && leaf.n <= meta.order);
-    
+
         // delete the key
         record_t *to_delete = find(leaf, key);
         std::copy(to_delete + 1, end(leaf), to_delete);
         leaf.n--;
-    
+
         // merge or borrow
-        if (leaf.n < min_n) {
+        if (leaf.n < min_n)
+        {
             // first borrow from left
             bool borrowed = false;
+
             if (leaf.prev != 0)
                 borrowed = borrow_key(false, leaf);
-    
+
             // then borrow from right
             if (!borrowed && leaf.next != 0)
                 borrowed = borrow_key(true, leaf);
-    
+
             // finally we merge
-            if (!borrowed) {
+            if (!borrowed)
+            {
                 assert(leaf.next != 0 || leaf.prev != 0);
-    
+
                 key_t index_key;
-    
-                if (where == end(parent) - 1) {
+
+                if (where == end(parent) - 1)
+                {
                     // if leaf is last element then merge | prev | leaf |
                     assert(leaf.prev != 0);
                     leaf_node_t prev;
                     map(&prev, leaf.prev);
                     index_key = begin(prev)->key;
-    
+
                     merge_leafs(&prev, &leaf);
                     node_remove(&prev, &leaf);
                     unmap(&prev, leaf.prev);
-                } else {
+                }
+                else
+                {
                     // else merge | leaf | next |
                     assert(leaf.next != 0);
                     leaf_node_t next;
                     map(&next, leaf.next);
                     index_key = begin(leaf)->key;
-    
+
                     merge_leafs(&leaf, &next);
                     node_remove(&leaf, &next);
                     unmap(&leaf, offset);
                 }
-    
+
                 // remove parent's key
                 remove_from_index(parent_off, parent, index_key);
-            } else {
+            }
+            else
+            {
                 unmap(&leaf, offset);
             }
-        } else {
+        }
+        else
+        {
             unmap(&leaf, offset);
         }
-    
+
         return 0;
     }
-    
-    int insert(const key_t& key, value_t value)
+
+    int insert(const key_t &key, value_t value)
     {
         off_t parent = search_index(key);
         off_t offset = search_leaf(parent, key);
         leaf_node_t leaf;
         map(&leaf, offset);
-    
+
         // check if we have the same key
         if (std::binary_search(begin(leaf), end(leaf), key))
             return 1;
-    
-        if (leaf.n == meta.order) {
+
+        if (leaf.n == meta.order)
+        {
             // split when full
-    
+
             // new sibling leaf
             leaf_node_t new_leaf;
             node_create(offset, &leaf, &new_leaf);
-    
+
             // find even split point
             size_t point = leaf.n / 2;
             bool place_right = keycmp(key, leaf.children[point].key) > 0;
+
             if (place_right)
                 ++point;
-    
+
             // split
             std::copy(leaf.children + point, leaf.children + leaf.n,
                       new_leaf.children);
             new_leaf.n = leaf.n - point;
             leaf.n = point;
-    
+
             // which part do we put the key
             if (place_right)
                 insert_record_no_split(&new_leaf, key, value);
             else
                 insert_record_no_split(&leaf, key, value);
-    
+
             // save leafs
             unmap(&leaf, offset);
             unmap(&new_leaf, leaf.next);
-    
+
             // insert new index key
             insert_key_to_index(parent, new_leaf.children[0].key,
                                 offset, leaf.next);
-        } else {
+        }
+        else
+        {
             insert_record_no_split(&leaf, key, value);
             unmap(&leaf, offset);
         }
-    
+
         return 0;
     }
-    
-    int update(const key_t& key, value_t value)
+
+    int update(const key_t &key, value_t value)
     {
         off_t offset = search_leaf(key);
         leaf_node_t leaf;
         map(&leaf, offset);
-    
+
         record_t *record = find(leaf, key);
+
         if (record != leaf.children + leaf.n)
-            if (keycmp(key, record->key) == 0) {
+            if (keycmp(key, record->key) == 0)
+            {
                 record->value = value;
                 unmap(&leaf, offset);
-    
+
                 return 0;
-            } else {
+            }
+            else
+            {
                 return 1;
             }
         else
             return -1;
     }
-    meta_t get_meta() const {
+    meta_t get_meta() const
+    {
         return meta;
     };
 
 private:
     char path[512];
     meta_t meta;
-    
+
     /* helper iterating function */
     template<class T>
-    typename T::child_t begin(T &node) const {
-        return node.children; 
+    typename T::child_t begin(T &node) const
+    {
+        return node.children;
     }
     template<class T>
-    typename T::child_t end(T &node) const {
+    typename T::child_t end(T &node) const
+    {
         return node.children + node.n;
     }
-    
+
     /* helper searching function */
-    index_t *find(internal_node_t &node, const key_t &key) const {
+    index_t *find(internal_node_t &node, const key_t &key) const
+    {
         return std::upper_bound(begin(node), end(node) - 1, key);
     }
-    record_t *find(leaf_node_t &node, const key_t &key) const {
+    record_t *find(leaf_node_t &node, const key_t &key) const
+    {
         return std::lower_bound(begin(node), end(node), key);
     }
-    
+
     void remove_from_index(off_t offset, internal_node_t &node,
-                                       const key_t &key)
+                           const key_t &key)
     {
         size_t min_n = meta.root_offset == offset ? 1 : meta.order / 2;
         assert(node.n >= min_n && node.n <= meta.order);
-    
+
         // remove key
         key_t index_key = begin(node)->key;
         index_t *to_delete = find(node, key);
-        if (to_delete != end(node)) {
+
+        if (to_delete != end(node))
+        {
             (to_delete + 1)->child = to_delete->child;
             std::copy(to_delete + 1, end(node), to_delete);
         }
+
         node.n--;
-    
+
         // remove to only one key
         if (node.n == 1 && meta.root_offset == offset &&
-                           meta.internal_node_num != 1)
+                meta.internal_node_num != 1)
         {
             unalloc(&node, meta.root_offset);
             meta.height--;
@@ -397,100 +448,115 @@ private:
             unmap(&meta, OFFSET_META);
             return;
         }
-    
+
         // merge or borrow
-        if (node.n < min_n) {
+        if (node.n < min_n)
+        {
             internal_node_t parent;
             map(&parent, node.parent);
-    
+
             // first borrow from left
             bool borrowed = false;
+
             if (offset != begin(parent)->child)
                 borrowed = borrow_key(false, node, offset);
-    
+
             // then borrow from right
             if (!borrowed && offset != (end(parent) - 1)->child)
                 borrowed = borrow_key(true, node, offset);
-    
+
             // finally we merge
-            if (!borrowed) {
+            if (!borrowed)
+            {
                 assert(node.next != 0 || node.prev != 0);
-    
-                if (offset == (end(parent) - 1)->child) {
+
+                if (offset == (end(parent) - 1)->child)
+                {
                     // if leaf is last element then merge | prev | leaf |
                     assert(node.prev != 0);
                     internal_node_t prev;
                     map(&prev, node.prev);
-    
+
                     // merge
                     index_t *where = find(parent, begin(prev)->key);
                     reset_index_children_parent(begin(node), end(node), node.prev);
                     merge_keys(where, prev, node);
                     unmap(&prev, node.prev);
-                } else {
+                }
+                else
+                {
                     // else merge | leaf | next |
                     assert(node.next != 0);
                     internal_node_t next;
                     map(&next, node.next);
-    
+
                     // merge
                     index_t *where = find(parent, index_key);
                     reset_index_children_parent(begin(next), end(next), offset);
                     merge_keys(where, node, next);
                     unmap(&node, offset);
                 }
-    
+
                 // remove parent's key
                 remove_from_index(node.parent, parent, index_key);
-            } else {
+            }
+            else
+            {
                 unmap(&node, offset);
             }
-        } else {
+        }
+        else
+        {
             unmap(&node, offset);
         }
     }
-    
+
     bool borrow_key(bool from_right, internal_node_t &borrower,
-                                off_t offset)
+                    off_t offset)
     {
         typedef typename internal_node_t::child_t child_t;
-    
+
         off_t lender_off = from_right ? borrower.next : borrower.prev;
         internal_node_t lender;
         map(&lender, lender_off);
-    
+
         assert(lender.n >= meta.order / 2);
-        if (lender.n != meta.order / 2) {
+
+        if (lender.n != meta.order / 2)
+        {
             child_t where_to_lend, where_to_put;
-    
+
             internal_node_t parent;
-    
+
             // swap keys, draw on paper to see why
-            if (from_right) {
+            if (from_right)
+            {
                 where_to_lend = begin(lender);
                 where_to_put = end(borrower);
-    
+
                 map(&parent, borrower.parent);
                 child_t where = std::lower_bound(begin(parent), end(parent) - 1,
-                                            (end(borrower) -1)->key);
+                                                 (end(borrower) - 1)->key);
                 where->key = where_to_lend->key;
                 unmap(&parent, borrower.parent);
-            } else {
+            }
+            else
+            {
                 where_to_lend = end(lender) - 1;
                 where_to_put = begin(borrower);
-    
+
                 map(&parent, lender.parent);
                 child_t where = find(parent, begin(lender)->key);
                 where_to_put->key = where->key;
                 where->key = (where_to_lend - 1)->key;
                 unmap(&parent, lender.parent);
             }
-    
+
             // store
             std::copy_backward(where_to_put, end(borrower), end(borrower) + 1);
             *where_to_put = *where_to_lend;
             borrower.n++;
-    
+
             // erase
             reset_index_children_parent(where_to_lend, where_to_lend + 1, offset);
             std::copy(where_to_lend + 1, end(lender), where_to_lend);
@@ -498,72 +564,79 @@ private:
             unmap(&lender, lender_off);
             return true;
         }
-    
+
         return false;
     }
-    
+
     bool borrow_key(bool from_right, leaf_node_t &borrower)
     {
         off_t lender_off = from_right ? borrower.next : borrower.prev;
         leaf_node_t lender;
         map(&lender, lender_off);
-    
+
         assert(lender.n >= meta.order / 2);
-        if (lender.n != meta.order / 2) {
+
+        if (lender.n != meta.order / 2)
+        {
             typename leaf_node_t::child_t where_to_lend, where_to_put;
-    
+
             // decide offset and update parent's index key
-            if (from_right) {
+            if (from_right)
+            {
                 where_to_lend = begin(lender);
                 where_to_put = end(borrower);
                 change_parent_child(borrower.parent, begin(borrower)->key,
                                     lender.children[1].key);
-            } else {
+            }
+            else
+            {
                 where_to_lend = end(lender) - 1;
                 where_to_put = begin(borrower);
                 change_parent_child(lender.parent, begin(lender)->key,
                                     where_to_lend->key);
             }
-    
+
             // store
             std::copy_backward(where_to_put, end(borrower), end(borrower) + 1);
             *where_to_put = *where_to_lend;
             borrower.n++;
-    
+
             // erase
             std::copy(where_to_lend + 1, end(lender), where_to_lend);
             lender.n--;
             unmap(&lender, lender_off);
             return true;
         }
-    
+
         return false;
     }
-    
+
     void change_parent_child(off_t parent, const key_t &o,
-                                         const key_t &n)
+                             const key_t &n)
     {
         internal_node_t node;
         map(&node, parent);
-    
+
         index_t *w = find(node, o);
-        assert(w != node.children + node.n); 
-    
+        assert(w != node.children + node.n);
+
         w->key = n;
         unmap(&node, parent);
-        if (w == node.children + node.n - 1) {
+
+        if (w == node.children + node.n - 1)
+        {
             change_parent_child(node.parent, o, n);
         }
     }
-    
+
     void merge_leafs(leaf_node_t *left, leaf_node_t *right)
     {
         std::copy(begin(*right), end(*right), end(*left));
         left->n += right->n;
     }
-    
+
     void merge_keys(index_t *where,
-                                internal_node_t &node, internal_node_t &next)
+                    internal_node_t &node, internal_node_t &next)
     {
         //(end(node) - 1)->key = where->key;
         //where->key = (end(next) - 1)->key;
@@ -571,149 +644,158 @@ private:
         node.n += next.n;
         node_remove(&node, &next);
     }
-    
+
     void insert_record_no_split(leaf_node_t *leaf,
-                                            const key_t &key, const value_t &value)
+                                const key_t &key, const value_t &value)
     {
         record_t *where = std::upper_bound(begin(*leaf), end(*leaf), key);
         std::copy_backward(where, end(*leaf), end(*leaf) + 1);
-    
+
         where->key = key;
         where->value = value;
         leaf->n++;
     }
-    
+
     void insert_key_to_index(off_t offset, const key_t &key,
-                                         off_t old, off_t after)
+                             off_t old, off_t after)
     {
-        if (offset == 0) {
+        if (offset == 0)
+        {
             // create new root node
             internal_node_t root;
             root.next = root.prev = root.parent = 0;
             meta.root_offset = alloc(&root);
             meta.height++;
-    
+
             // insert `old` and `after`
             root.n = 2;
             root.children[0].key = key;
             root.children[0].child = old;
             root.children[1].child = after;
-    
+
             unmap(&meta, OFFSET_META);
             unmap(&root, meta.root_offset);
-    
+
             // update children's parent
             reset_index_children_parent(begin(root), end(root),
                                         meta.root_offset);
             return;
         }
-    
+
         internal_node_t node;
         map(&node, offset);
         assert(node.n <= meta.order);
-    
-        if (node.n == meta.order) {
+
+        if (node.n == meta.order)
+        {
             // split when full
-    
+
             internal_node_t new_node;
             node_create(offset, &node, &new_node);
-    
+
             // find even split point
             size_t point = (node.n - 1) / 2;
             bool place_right = keycmp(key, node.children[point].key) > 0;
+
             if (place_right)
                 ++point;
-    
+
             // prevent the `key` being the right `middle_key`
             // example: insert 48 into |42|45| 6|  |
             if (place_right && keycmp(key, node.children[point].key) < 0)
                 point--;
-    
+
             key_t middle_key = node.children[point].key;
-    
+
             // split
             std::copy(begin(node) + point + 1, end(node), begin(new_node));
             new_node.n = node.n - point - 1;
             node.n = point + 1;
-    
+
             // put the new key
             if (place_right)
                 insert_key_to_index_no_split(new_node, key, after);
             else
                 insert_key_to_index_no_split(node, key, after);
-    
+
             unmap(&node, offset);
             unmap(&new_node, node.next);
-    
+
             // update children's parent
             reset_index_children_parent(begin(new_node), end(new_node), node.next);
-    
+
             // give the middle key to the parent
             // note: middle key's child is reserved
             insert_key_to_index(node.parent, middle_key, offset, node.next);
-        } else {
+        }
+        else
+        {
             insert_key_to_index_no_split(node, key, after);
             unmap(&node, offset);
         }
     }
-    
+
     void insert_key_to_index_no_split(internal_node_t &node,
-                                                  const key_t &key, off_t value)
+                                      const key_t &key, off_t value)
     {
         index_t *where = std::upper_bound(begin(node), end(node) - 1, key);
-    
+
         // move later index forward
         std::copy_backward(where, end(node), end(node) + 1);
-    
+
         // insert this key
         where->key = key;
         where->child = (where + 1)->child;
         (where + 1)->child = value;
-    
+
         node.n++;
     }
-    
+
     void reset_index_children_parent(index_t *begin, index_t *end,
-                                                 off_t parent)
+                                     off_t parent)
     {
         // this function can change both internal_node_t and leaf_node_t's parent
         // field, but we should ensure that:
         // 1. sizeof(internal_node_t) <= sizeof(leaf_node_t)
         // 2. parent field is placed in the beginning and have same size
         internal_node_t node;
-        while (begin != end) {
+
+        while (begin != end)
+        {
             map(&node, begin->child);
             node.parent = parent;
             unmap(&node, begin->child, SIZE_NO_CHILDREN);
             ++begin;
         }
     }
-    
+
     off_t search_index(const key_t &key) const
     {
         off_t org = meta.root_offset;
         int height = meta.height;
-        while (height > 1) {
+
+        while (height > 1)
+        {
             internal_node_t node;
             map(&node, org);
-    
+
             index_t *i = std::upper_bound(begin(node), end(node) - 1, key);
             org = i->child;
             --height;
         }
-    
+
         return org;
     }
-    
+
     off_t search_leaf(off_t index, const key_t &key) const
     {
         internal_node_t node;
         map(&node, index);
-    
+
         index_t *i = std::upper_bound(begin(node), end(node) - 1, key);
         return i->child;
     }
-    
+
     template<class T>
     void node_create(off_t offset, T *node, T *next)
     {
@@ -722,30 +804,36 @@ private:
         next->next = node->next;
         next->prev = offset;
         node->next = alloc(next);
+
         // update next node's prev
-        if (next->next != 0) {
+        if (next->next != 0)
+        {
             T old_next;
             map(&old_next, next->next, SIZE_NO_CHILDREN);
             old_next.prev = node->next;
             unmap(&old_next, next->next, SIZE_NO_CHILDREN);
         }
+
         unmap(&meta, OFFSET_META);
     }
-    
+
     template<class T>
     void node_remove(T *prev, T *node)
     {
         unalloc(node, prev->next);
         prev->next = node->next;
-        if (node->next != 0) {
+
+        if (node->next != 0)
+        {
             T next;
             map(&next, node->next, SIZE_NO_CHILDREN);
             next.prev = node->prev;
             unmap(&next, node->next, SIZE_NO_CHILDREN);
         }
+
         unmap(&meta, OFFSET_META);
     }
-    
+
     void init_from_empty()
     {
         // init default meta
@@ -755,24 +843,24 @@ private:
         meta.key_size = sizeof(key_t);
         meta.height = 1;
         meta.slot = OFFSET_BLOCK;
-    
+
         // init root node
         internal_node_t root;
         root.next = root.prev = root.parent = 0;
         meta.root_offset = alloc(&root);
-    
+
         // init empty leaf
         leaf_node_t leaf;
         leaf.next = leaf.prev = 0;
         leaf.parent = meta.root_offset;
         meta.leaf_offset = root.children[0].child = alloc(&leaf);
-    
+
         // save
         unmap(&meta, OFFSET_META);
         unmap(&root, meta.root_offset);
         unmap(&leaf, root.children[0].child);
     }
-    
+
     off_t search_leaf(const key_t &key) const
     {
         return search_leaf(search_index(key), key);
@@ -865,11 +953,15 @@ private:
         return unmap(block, offset, sizeof(T));
     }
 };
-
-bplus_tree<key_str, int> *init1;
+typedef Type_varchar<64> str64;
+typedef std::pair<RID, RID> pair_rid;
 /* custom compare operator for STL algorithms */
-OPERATOR_KEYCMP(key_str, int, index_t)
-OPERATOR_KEYCMP(key_str, int, record_t)
+OPERATOR_KEYCMP(Type_int, RID, index_t)
+OPERATOR_KEYCMP(Type_int, RID, record_t)
+OPERATOR_KEYCMP(str64, RID, index_t)
+OPERATOR_KEYCMP(str64, RID, record_t)
+OPERATOR_KEYCMP(RID, pair_rid, index_t)
+OPERATOR_KEYCMP(RID, pair_rid, record_t)
 
 }
 

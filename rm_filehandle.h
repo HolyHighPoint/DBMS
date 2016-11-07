@@ -7,14 +7,16 @@
 class RM_FileHandle
 {
 private:
+    const int typePage = 0;
+    const int leftPage = 1;
     BufPageManager *bpm;
     int fileId;
     int findPage(int length)
     {
         int index;
-        BufType b = bpm->getPage(fileId, 0, index);
+        BufType b = bpm->getPage(fileId, leftPage, index);
 
-        for (int i = 1; PAGE_INT_NUM; i++)
+        for (int i = leftPage+1; i < PAGE_INT_NUM; i++)
         {
             int t = b[i];
             int num = t & 0x0000ffff, uses = t >> 16;
@@ -34,7 +36,7 @@ public:
     {
 
     }
-    void init(BufPageManager *_bpm, int _fileId)
+    void init (BufPageManager *_bpm, int _fileId)
     {
         bpm = _bpm;
         fileId = _fileId;
@@ -45,7 +47,7 @@ public:
     }
 
 
-    RC InsertRec      (const RM_Record &rec, RID &rid)
+    RC InsertRec (const RM_Record &rec, RID &rid)
     {
         Byte byte = rec.toByte();
         int index, index_zero, pageId = findPage(byte.length);
@@ -70,7 +72,7 @@ public:
                 fp += byte.length;
                 *(ush *)(bc + PAGE_SIZE - 2) = fp;
                 bpm->markDirty(index);
-                BufType zero = bpm->getPage(fileId, 0, index_zero);
+                BufType zero = bpm->getPage(fileId, leftPage, index_zero);
                 zero[pageId] = (zero[pageId] & 0xffff0000) | num;
                 zero[pageId] = (zero[pageId] & 0x0000ffff) | ((4 * (num + 2) + fp) << 16);
                 bpm->markDirty(index_zero);
@@ -89,14 +91,14 @@ public:
         *(ush *)(bc + PAGE_SIZE - 2) = fp;
         *(ush *)(bc + PAGE_SIZE - 4) = num;
         bpm->markDirty(index);
-        BufType zero = bpm->getPage(fileId, 0, index_zero);
+        BufType zero = bpm->getPage(fileId, leftPage, index_zero);
         zero[pageId] = (zero[pageId] & 0xffff0000) | num;
         zero[pageId] = (zero[pageId] & 0x0000ffff) | ((4 * (num + 2) + fp) << 16);
         bpm->markDirty(index_zero);
         return Success;
     }
 
-    RC GetRec         (const RID &rid, RM_Record &rec) const
+    RC GetRec (const RID &rid, RM_Record &rec) const
     {
         int index;
         BufType b = bpm->getPage(fileId, rid.pageId, index);
@@ -115,7 +117,7 @@ public:
         rec.fromByte(byte);
         return Success;
     }
-    RC DeleteRec      (const RID &rid)
+    RC DeleteRec (const RID &rid)
     {
         int index, index_zero;
         BufType b = bpm->getPage(fileId, rid.pageId, index);
@@ -140,7 +142,7 @@ public:
 
         *(ush *)(bc + PAGE_SIZE - 2) = (fp -= length);
         bpm->markDirty(index);
-        BufType zero = bpm->getPage(fileId, 0, index_zero);
+        BufType zero = bpm->getPage(fileId, leftPage, index_zero);
         zero[rid.pageId] = (zero[rid.pageId] & 0x0000ffff) | ((4 * (num + 2) + fp) << 16);
         bpm->markDirty(index_zero);
         return Success;
@@ -149,19 +151,19 @@ public:
     {
         int zero_index;
         RM_Record b;
-        b.push_back(new RM_Type_int());
-        b.push_back(new RM_Type_varchar<>());
-        b.push_back(new RM_Type_int());
-        b.push_back(new RM_Type_varchar<>());
-        b.push_back(new RM_Type_int());
-        b.push_back(new RM_Type_int());
-        b.push_back(new RM_Type_varchar<>());
-        b.push_back(new RM_Type_varchar<>());
+        b.push_back(new Type_int());
+        b.push_back(new Type_varchar<>());
+        b.push_back(new Type_int());
+        b.push_back(new Type_varchar<>());
+        b.push_back(new Type_int());
+        b.push_back(new Type_int());
+        b.push_back(new Type_varchar<>());
+        b.push_back(new Type_varchar<>());
         std::vector<std::pair<RID, RM_Record> > list;
 
-        for (int i = 1; i < PAGE_INT_NUM; i++)
+        for (int i = leftPage+1; i < PAGE_INT_NUM; i++)
         {
-            BufType bb = bpm->getPage(fileId, 0, zero_index);
+            BufType bb = bpm->getPage(fileId, leftPage, zero_index);
             int num = bb[i] & 0x0000ffff;
 
             if (num == 0)continue;
@@ -171,14 +173,14 @@ public:
                 if (this->GetRec(RID(i, j), b) == Success)
                 {
                     RM_Record b;
-                    b.push_back(new RM_Type_int());
-                    b.push_back(new RM_Type_varchar<>());
-                    b.push_back(new RM_Type_int());
-                    b.push_back(new RM_Type_varchar<>());
-                    b.push_back(new RM_Type_int());
-                    b.push_back(new RM_Type_int());
-                    b.push_back(new RM_Type_varchar<>());
-                    b.push_back(new RM_Type_varchar<>());
+                    b.push_back(new Type_int());
+                    b.push_back(new Type_varchar<>());
+                    b.push_back(new Type_int());
+                    b.push_back(new Type_varchar<>());
+                    b.push_back(new Type_int());
+                    b.push_back(new Type_int());
+                    b.push_back(new Type_varchar<>());
+                    b.push_back(new Type_varchar<>());
                     this->GetRec(RID(i, j), b);
                     list.push_back(make_pair(RID(i, j), b));
                 }

@@ -13,5 +13,5 @@ elseif(COMPILER_SUPPORTS_CXX0X)
 else()
         message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
-add_executable(DBMS test.cpp rc.h rm_manager.h rm_filehandle.h rm_record.h rm_type.h)
+add_executable(DBMS test.cpp rc.h rm_manager.h rm_filehandle.h rm_record.h type.h bptree.h ix_manager.h)
 
