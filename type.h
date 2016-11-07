@@ -23,6 +23,59 @@ public:
     }
 };
 
+class Type_tinyint : public Type
+{
+private:
+    int value;
+public:
+    Type_tinyint(bool _null = true, int t=0)
+        : Type(Type::sta, _null), value(t)
+    {
+    }
+    int getSize()
+    {
+        return sizeof(char) / sizeof(uch);
+    }
+    
+    Byte toByte()
+    {
+        if (null) value = 0;
+        
+        return Byte(sizeof(char) / sizeof(uch), (uch *)&value);
+    }
+    void fromByte(Byte byte)
+    {
+        value = *(int *)byte.a;
+    }
+    void print()
+    {
+        if (null)printf("%d ", 0);
+        else printf("%d ", value);
+    }
+    
+    int getValue()
+    {
+        return value;
+    }
+    void setValue(int t)
+    {
+        value = t;
+    }
+    
+    bool operator < (const Type_int &t) const
+    {
+        if(null && t.null)return false;
+        if(null != t.null)return null < t.null;
+        return value < t.value;
+    }
+
+    bool operator == (const Type_int &t) const
+    {
+        if(null && t.null) return true;
+        return value == t.value;
+    }
+};
+
 class Type_int : public Type
 {
 private:
