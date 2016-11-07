@@ -8,11 +8,13 @@
 #include <fstream>
 #include <string>
 
-class IX_Manager {
+class IX_Manager
+{
 private:
-    bool fexists(const char *filename) {
-      std::ifstream ifile(filename);
-      return (bool)ifile;
+    bool fexists(const char *filename)
+    {
+        std::ifstream ifile(filename);
+        return (bool)ifile;
     }
     bptree::bplus_tree<Type_int, RID> *bptree_int;
     bptree::bplus_tree<Type_varchar<64>, RID> *bptree_str_64;
@@ -20,81 +22,198 @@ private:
 public:
     IX_Manager (const char *filename, bool unique, Type *type)
     {
-        if(dynamic_cast<Type_int*>(type) != NULL)
+        if (dynamic_cast<Type_int *>(type) != NULL)
         {
             bptree_int = new bptree::bplus_tree<Type_int, RID>(filename, !fexists(filename));
             bptree_str_64 = NULL;
         }
-        if(dynamic_cast<Type_varchar<64>*>(type) != NULL)
+
+        if (dynamic_cast<Type_varchar<64>*>(type) != NULL)
         {
             bptree_str_64 = new bptree::bplus_tree<Type_varchar<64>, RID>(filename, !fexists(filename));
             bptree_int = NULL;
         }
-        if(!unique)
+
+        if (!unique)
         {
             std::string tmp = "deque_";
             tmp += filename;
             bptree_rid = new bptree::bplus_tree<RID, std::pair<RID, RID> >(tmp.c_str(), !fexists(tmp.c_str()));
-        }else bptree_rid = NULL;
+        }
+        else bptree_rid = NULL;
     }
 
     ~IX_Manager ()
     {
-        if(bptree_int)delete bptree_int;
-        if(bptree_str_64)delete bptree_str_64;
-        if(bptree_rid)delete bptree_rid;
+        if (bptree_int)delete bptree_int;
+
+        if (bptree_str_64)delete bptree_str_64;
+
+        if (bptree_rid)delete bptree_rid;
     }
 
     RC InsertEntry (Type *data, const RID &rid)
     {
-        if(bptree_int)
+        if (bptree_int)
         {
-            int ret = bptree_int->insert(*(Type_int*)data, rid);
-            if(ret)
+            bptree_int->insert(*(Type_int *)data, rid);
+            RID first;
+            bptree_int->search(*(Type_int *)data, &first);
+
+            if (first == RID())
             {
-                if(!bptree_rid)return Error;
-                RID first;
-                bptree_int->search(*(Type_int*)data, &first);
-                if(first == RID())
-                {
-                }
-                std::pair<RID, RID> link;
-                bptree_rid->search(rid, &link);
-                link.first = rid;
-                bptree_rid->update(first, link);
-                bptree_rid->insert(rid, std::make_pair(RID(), first));
+                bptree_int->update(*(Type_int *)data, rid);
+
+                if (bptree_rid)bptree_rid->insert(rid, std::make_pair(RID(), RID()));
+
+                return Success;
+            }
+            else if (first == rid)
+            {
+                if (bptree_rid)bptree_rid->insert(rid, std::make_pair(RID(), RID()));
+
+                return Success;
             }
             else
             {
-                if(bptree_rid)
-                    bptree_rid->insert(rid, std::make_pair(RID(), RID()));
-            }
-        }
-        if(bptree_str_64)
-        {
-            int ret = bptree_str_64->insert(*(Type_varchar<64>*)data, rid);
-            if(ret)
-            {
-                if(!bptree_rid)return Error;
-                RID first;
-                bptree_str_64->search(*(Type_varchar<64>*)data, &first);
+                if (!bptree_rid)return Error;
+
                 std::pair<RID, RID> link;
-                bptree_rid->search(rid, &link);
+                bptree_rid->search(first, &link);
                 link.first = rid;
                 bptree_rid->update(first, link);
                 bptree_rid->insert(rid, std::make_pair(RID(), first));
+                bptree_int->update(*(Type_int *)data, rid);
+            }
+        }
+
+        if (bptree_str_64)
+        {
+            bptree_str_64->insert(*(Type_varchar<64> *)data, rid);
+            RID first;
+            bptree_str_64->search(*(Type_varchar<64> *)data, &first);
+
+            if (first == RID())
+            {
+                bptree_str_64->update(*(Type_varchar<64> *)data, rid);
+
+                if (bptree_rid)bptree_rid->insert(rid, std::make_pair(RID(), RID()));
+
+                return Success;
+            }
+            else if (first == rid)
+            {
+                if (bptree_rid)bptree_rid->insert(rid, std::make_pair(RID(), RID()));
+
+                return Success;
             }
             else
             {
-                if(bptree_rid)
-                    bptree_rid->insert(rid, std::make_pair(RID(), RID()));
+                if (!bptree_rid)return Error;
+
+                std::pair<RID, RID> link;
+                bptree_rid->search(first, &link);
+                link.first = rid;
+                bptree_rid->update(first, link);
+                bptree_rid->insert(rid, std::make_pair(RID(), first));
+                bptree_str_64->update(*(Type_varchar<64> *)data, rid);
             }
         }
+
+        return Success;
     }
 
     RC DeleteEntry (Type *data, const RID &rid)
     {
+        if (bptree_int)
+        {
+            if (bptree_rid)
+            {
+                std::pair<RID, RID> link, next, pre;
 
+                if (bptree_rid->search(rid, &link) != 0)return Error;
+
+                if (link.first == RID())bptree_int->update(*(Type_int *)data, link.second);
+
+                if (link.second != RID())
+                {
+                    bptree_rid->search(link.second, &next);
+                    bptree_rid->update(link.second, make_pair(link.first, next.second));
+                }
+
+                if (link.first != RID())
+                {
+                    bptree_rid->search(link.first, &pre);
+                    bptree_rid->update(link.first, make_pair(pre.first, link.second));
+                }
+            }
+            else
+            {
+                if (bptree_int->update(*(Type_int *)data, RID()) != 0)return Error;
+            }
+        }
+
+        if (bptree_str_64)
+        {
+            if (bptree_rid)
+            {
+                std::pair<RID, RID> link, next, pre;
+
+                if (bptree_rid->search(rid, &link) != 0)return Error;
+
+                if (link.first == RID())bptree_str_64->update(*(Type_varchar<64> *)data, link.second);
+
+                if (link.second != RID())
+                {
+                    bptree_rid->search(link.second, &next);
+                    bptree_rid->update(link.second, make_pair(link.first, next.second));
+                }
+
+                if (link.first != RID())
+                {
+                    bptree_rid->search(link.first, &pre);
+                    bptree_rid->update(link.first, make_pair(pre.first, link.second));
+                }
+            }
+            else
+            {
+                if (bptree_int->update(*(Type_int *)data, RID()) != 0)return Error;
+            }
+        }
+
+        return Success;
+    }
+
+    std::vector<RID> SearchEntry (Type *data)
+    {
+        std::vector<RID> ans;
+        ans.clear();
+        RID first;
+        std::pair<RID, RID> t;
+
+        if (bptree_int)
+        {
+            if (bptree_int->search(*(Type_int *)data, &first) != 0)return ans;
+        }
+
+        if (bptree_str_64)
+        {
+            if (bptree_str_64->search(*(Type_varchar<64> *)data, &first) != 0)return ans;
+        }
+
+        if (!bptree_rid)
+        {
+            if (first != RID()) ans.push_back(first);
+
+            return ans;
+        }
+
+        for (RID i = first; i != RID(); bptree_rid->search(i, &t), i = t.second)
+        {
+            ans.push_back(i);
+        }
+
+        return ans;
     }
 };
 

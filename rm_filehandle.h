@@ -16,7 +16,7 @@ private:
         int index;
         BufType b = bpm->getPage(fileId, leftPage, index);
 
-        for (int i = leftPage+1; i < PAGE_INT_NUM; i++)
+        for (int i = leftPage + 1; i < PAGE_INT_NUM; i++)
         {
             int t = b[i];
             int num = t & 0x0000ffff, uses = t >> 16;
@@ -161,7 +161,7 @@ public:
         b.push_back(new Type_varchar<>());
         std::vector<std::pair<RID, RM_Record> > list;
 
-        for (int i = leftPage+1; i < PAGE_INT_NUM; i++)
+        for (int i = leftPage + 1; i < PAGE_INT_NUM; i++)
         {
             BufType bb = bpm->getPage(fileId, leftPage, zero_index);
             int num = bb[i] & 0x0000ffff;

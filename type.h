@@ -64,14 +64,17 @@ public:
 
     bool operator < (const Type_int &t) const
     {
-        if(null && t.null)return false;
-        if(null != t.null)return null < t.null;
+        if (null && t.null)return false;
+
+        if (null != t.null)return null < t.null;
+
         return value < t.value;
     }
 
     bool operator == (const Type_int &t) const
     {
-        if(null && t.null) return true;
+        if (null && t.null) return true;
+
         return value == t.value;
     }
 };
@@ -93,7 +96,6 @@ public:
     }
     ~Type_varchar()
     {
-        if (str != NULL)delete [] str;
     }
 
     int getSize()
@@ -131,14 +133,17 @@ public:
     }
     bool operator < (const Type_varchar &t) const
     {
-        if(null && t.null)return false;
-        if(null != t.null)return null < t.null;
+        if (null && t.null)return false;
+
+        if (null != t.null)return null < t.null;
+
         return strcmp(str, t.str) < 0;
     }
 
     bool operator == (const Type_varchar &t) const
     {
-        if(null && t.null) return true;
+        if (null && t.null) return true;
+
         return strcmp(str, t.str) == 0;
     }
 };

@@ -13,9 +13,21 @@ struct RID
         pageId = _pageId;
         rowId = _rowId;
     }
-    bool operator < (const RID &a)
+    bool operator < (const RID &a) const
     {
-        if(pageId == a.pageId)return rowId < a.rowId;else return rowId < a.rowId;
+        if (pageId == a.pageId)return rowId < a.rowId;
+        else return pageId < a.pageId;
     }
+
+    bool operator == (const RID &a) const
+    {
+        return (pageId == a.pageId) && (rowId == a.rowId);
+    }
+
+    bool operator != (const RID &a) const
+    {
+        return !(*this == a);
+    }
+
 };
 #endif
