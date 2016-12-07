@@ -1,2 +1,2 @@
 #!/bin/sh
-astyle --mode=c --style=ansi -f --indent=spaces=4 --convert-tabs --align-pointer=name --pad-oper --pad-header --suffix=none --lineend=linux --indent-switches *.cpp *.h
+astyle --mode=c --style=ansi -f --indent=spaces=4 --convert-tabs --align-pointer=name --pad-oper --pad-header --suffix=none --lineend=linux --indent-switches *.cpp *.h 
