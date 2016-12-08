@@ -201,11 +201,12 @@ enum hsql_tokentype
     SQL_CHAR = 378,
     SQL_VARCHAR = 379,
     SQL_TINYINT = 380,
-    SQL_EQUALS = 381,
-    SQL_LESS = 382,
-    SQL_GREATER = 383,
-    SQL_NOTNULL = 384,
-    SQL_UMINUS = 385
+    SQL_USE = 381,
+    SQL_EQUALS = 382,
+    SQL_LESS = 383,
+    SQL_GREATER = 384,
+    SQL_NOTNULL = 385,
+    SQL_UMINUS = 386
 };
 #endif
 
@@ -232,6 +233,7 @@ union HSQL_STYPE
     hsql::DropStatement    *drop_stmt;
     hsql::ShowStatement    *show_stmt;
     hsql::DescStatement    *desc_stmt;
+    hsql::UseStatement     *use_stmt;
     hsql::PrepareStatement *prep_stmt;
     hsql::ExecuteStatement *exec_stmt;
 
@@ -252,7 +254,7 @@ union HSQL_STYPE
     std::vector<hsql::UpdateClause *> *update_vec;
     std::vector<hsql::Expr *> *expr_vec;
 
-#line 256 "bison_parser.h" /* yacc.c:1909  */
+#line 258 "bison_parser.h" /* yacc.c:1909  */
 };
 # define HSQL_STYPE_IS_TRIVIAL 1
 # define HSQL_STYPE_IS_DECLARED 1

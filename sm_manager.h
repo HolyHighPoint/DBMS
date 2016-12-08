@@ -1,0 +1,417 @@
+#ifndef SM_MANAGER_H
+#define SM_MANAGER_H
+#include "rc.h"
+#include "rm_filehandle.h"
+#include <boost/filesystem.hpp>
+#include <fstream>
+#include "sql/statements.h"
+#include "rm_record.h"
+namespace bf = boost::filesystem;
+
+class SM_Manager
+{
+private:
+    SM_Manager()
+    {
+    }
+    static SM_Manager *m_instance;
+    class CGarbo
+    {
+    public:
+        ~CGarbo()
+        {
+            if (SM_Manager::m_instance)
+                delete SM_Manager::m_instance;
+        }
+    };
+    static CGarbo Garbo;
+    std::string curdb;
+public:
+    static SM_Manager *getInstance()
+    {
+        if (m_instance == NULL)
+            m_instance = new SM_Manager();
+
+        return m_instance;
+    }
+
+    RM_Record makeHead(bf::path filename)
+    {
+        std::ifstream fi(filename.string());
+        int n;
+        fi >> n;
+        RM_Record head;
+
+        for (int i = 0; i < n; i++)
+        {
+            string name, type;
+            bool notnull, index, primary;
+            int len;
+            getline(fi, name);
+
+            if (name.empty())getline(fi, name);
+
+            fi >> type >> len >> notnull >> index >> primary;
+            Type *data;
+
+            if (type == "INTEGER")
+            {
+                data = new Type_int(!notnull);
+            }
+            else if (type == "INT")
+            {
+                data = new Type_int(!notnull);
+            }
+            else if (type == "CHAR" || type == "VARCHAR")
+            {
+                if (len <= 32)data = new Type_varchar<32>(!notnull);
+                else if (len <= 64)data = new Type_varchar<64>(!notnull);
+                else if (len <= 128)data = new Type_varchar<128>(!notnull);
+                else if (len <= 256)data = new Type_varchar<256>(!notnull);
+            }
+
+            head.push_back(data);
+        }
+
+        return head;
+    }
+
+    RC createDatabase(const char *name)
+    {
+        std::ifstream fi(configFile, std::fstream::in);
+        std::string buf;
+
+        while (getline(fi, buf))
+        {
+            if (strcmp(buf.c_str(), name) == 0)
+            {
+                printf("Database %s already exists\n", name);
+                return Error;
+            }
+        }
+
+        fi.close();
+        bf::path workPath = bf::current_path();
+        bf::path path = workPath / name;
+
+        if (bf::exists(path))
+        {
+            printf("Database directory %s already exists\n", path.c_str());
+            return Error;
+        }
+
+        bf::create_directory(path);
+        std::ofstream fo(configFile, std::fstream::app);
+        fo << std::string(name) << endl;
+        fo.close();
+        return Success;
+    }
+
+    RC dropDatabase(const char *name)
+    {
+        std::ifstream fi(configFile, std::fstream::in);
+        std::string buf;
+        std::vector<std::string> dbs;
+        bool f = false;
+
+        while (getline(fi, buf))
+        {
+            if (strcmp(buf.c_str(), name) == 0)f = true;
+            else dbs.push_back(buf);
+        }
+
+        fi.close();
+
+        if (!f)
+        {
+            printf("Database %s doesn't' exist\n", name);
+            return Error;
+        }
+
+        if (strcmp(curdb.c_str(), name) == 0)curdb.clear();
+
+        bf::path workPath = bf::current_path();
+        bf::path path = workPath / name;
+
+        if (bf::exists(path))
+            bf::remove_all(path);
+
+        std::ofstream fo(configFile);
+
+        for (std::string s : dbs)fo << s << endl;
+
+        fo.close();
+        return Success;
+    }
+
+    RC useDatabase(const char *name)
+    {
+        std::ifstream fi(configFile, std::fstream::in);
+        std::string buf;
+        bool f = false;
+
+        while (getline(fi, buf))
+        {
+            if (strcmp(buf.c_str(), name) == 0)
+            {
+                bf::path workPath = bf::current_path();
+                bf::path path = workPath / name;
+
+                if (bf::exists(path) && bf::is_directory(path))
+                {
+                    curdb = string(name);
+                    f = true;
+                }
+            }
+        }
+
+        fi.close();
+
+        if (!f)
+        {
+            printf("Database %s doesn't exist\n", name);
+            return Error;
+        }
+
+        return Success;
+    }
+
+    RC showDatabases()
+    {
+        std::ifstream fi(configFile, std::fstream::in);
+        std::string buf;
+        bool f = false;
+
+        while (getline(fi, buf))
+        {
+            printf("%s\n", buf.c_str());
+        }
+
+        fi.close();
+        return Success;
+    }
+
+    RC showTables()
+    {
+        if (curdb.empty())
+        {
+            printf("There is no current database\n");
+            return Error;
+        }
+
+        bf::path workPath = bf::current_path() / curdb;
+        std::ifstream fi((workPath / configFile).string(), std::fstream::in);
+        std::string buf;
+
+        while (getline(fi, buf))
+        {
+            printf("%s\n", buf.c_str());
+        }
+
+        fi.close();
+    }
+
+    RC dropTable(const char *name)
+    {
+        if (curdb.empty())
+        {
+            printf("There is no current database\n");
+            return Error;
+        }
+
+        bf::path workPath = bf::current_path() / curdb;
+        std::ifstream fi((workPath / configFile).string(), std::fstream::in);
+        std::string buf;
+        std::vector<std::string> tbs;
+        bool f = false;
+
+        while (getline(fi, buf))
+        {
+            if (strcmp(buf.c_str(), name) == 0)f = true;
+            else tbs.push_back(buf);
+        }
+
+        fi.close();
+
+        if (!f)
+        {
+            printf("Table %s doesn't' exist\n", name);
+            return Error;
+        }
+
+        bf::path path = workPath / name;
+
+        if (bf::exists(path))
+            bf::remove_all(path);
+
+        std::ofstream fo((workPath / configFile).string());
+
+        for (std::string s : tbs)fo << s << endl;
+
+        fo.close();
+        return Success;
+    }
+
+
+    RC createTable(const char *name, std::vector<hsql::ColumnDefinition *> &columns)
+    {
+        if (curdb.empty())
+        {
+            printf("There is no current database\n");
+            return Error;
+        }
+
+        bf::path workPath = bf::current_path() / curdb;
+        std::ifstream fi((workPath / configFile).string(), std::fstream::in);
+        std::string buf;
+
+        while (getline(fi, buf))
+        {
+            if (strcmp(buf.c_str(), name) == 0)
+            {
+                printf("Table %s already exists\n", name);
+                return Error;
+            }
+        }
+
+        fi.close();
+
+        bf::path path = workPath / name;
+
+        if (bf::exists(path))
+        {
+            printf("Table directory %s already exists\n", path.c_str());
+            return Error;
+        }
+
+        bf::create_directory(path);
+        std::ofstream fo((workPath / configFile).string(), std::fstream::app);
+        fo << std::string(name) << endl;
+        fo.close();
+        fo.open((path / configFile).string());
+
+        string primary;
+
+        for (int i = 0; i < columns.size(); i++)
+            if (columns[i]->type == hsql::ColumnDefinition::PRIMARY)
+            {
+                if (!primary.empty())
+                {
+                    printf("Table %s already has primary key %s\n", name, primary.c_str());
+                    fo.close();
+                    bf::remove(path / configFile);
+                    return Error;
+                }
+
+                primary = std::string(columns[i]->name);
+                columns.erase(columns.begin() + i);
+            }
+
+        for (int i = 0; i < columns.size() - 1; i++)
+            for (int j = i + 1; j < columns.size(); j++)
+                if (strcmp(columns[i]->name, columns[j]->name) == 0)
+                {
+                    printf("Table %s already has key %s\n", name, primary.c_str());
+                    fo.close();
+                    bf::remove(path / configFile);
+                    return Error;
+                }
+
+
+        fo << columns.size() << endl;
+
+        for (hsql::ColumnDefinition * it : columns)
+        {
+            fo << it->name << endl;
+
+            switch (it->type)
+            {
+                case hsql::ColumnDefinition::INTEGER:
+                    fo << "INTEGER" << -1 << " ";
+                    break;
+
+                case hsql::ColumnDefinition::TINYINT:
+                    fo << "TINYINT" << -1 << " ";
+                    break;
+
+                case hsql::ColumnDefinition::INT:
+                    fo << "INT" << " " << it->len << " ";
+                    break;
+
+                case hsql::ColumnDefinition::CHAR:
+                    fo << "CHAR" << " " << it->len << " ";
+                    break;
+
+                case hsql::ColumnDefinition::VARCHAR:
+                    fo << "VARCHAR" << " " << it->len << " ";
+                    break;
+            }
+
+            fo << it->notnull << " " << (std::string(it->name) == primary) << " " << (std::string(it->name) == primary) << endl;
+
+        }
+
+        return Success;
+    }
+
+    RC descTable(const char *name)
+    {
+        if (curdb.empty())
+        {
+            printf("There is no current database\n");
+            return Error;
+        }
+
+        bf::path workPath = bf::current_path() / curdb;
+        std::ifstream fi((workPath / configFile).string(), std::fstream::in);
+        std::string buf;
+        bool f;
+
+        while (getline(fi, buf))
+        {
+            if (strcmp(buf.c_str(), name) == 0)
+            {
+                bf::path path = workPath / name;
+
+                if (bf::exists(path) && bf::is_directory(path))
+                    f = true;
+            }
+        }
+
+        fi.close();
+
+        if (!f)
+        {
+            printf("Table %s doesn't exist\n", name);
+            return Error;
+        }
+
+        bf::path path = workPath / name;
+        fi.open((path / configFile).string());
+        int n;
+        fi >> n;
+
+        for (int i = 0; i < n; i++)
+        {
+            string name, type;
+            bool notnull, index, primary;
+            int len;
+            getline(fi, name);
+
+            if (name.empty())getline(fi, name);
+
+            fi >> type >> len >> notnull >> index >> primary;
+            printf("%s: %s", name.c_str(), type.c_str());
+
+            if (len != -1)printf("(%d) ", len);
+
+            printf("--%s, %s, %s\n", notnull ? "Not NULL" : "NULL", index ? "Indexed" : "Unindexed", primary ? "Primary" : "Not Primary");
+        }
+
+        return Success;
+    }
+
+
+};
+SM_Manager *SM_Manager::m_instance = NULL;
+#endif

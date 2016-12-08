@@ -1,43 +1,37 @@
-
-#include <stdlib.h>
+#include <iostream>
 #include <string>
-
-// include the sql parser
 #include "SQLParser.h"
+#include "rc.h"
+#include "parser.h"
 
-// contains printing utilities
-#include "sqlhelper.h"
-
+using namespace std;
 int main(int argc, char *argv[])
 {
-    if (argc <= 1)
+    if (argc > 1)freopen(argv[1], "r", stdin);
+
+    char buf[1024];
+    string query;
+
+    while (scanf("%s", buf) != EOF)
     {
-        fprintf(stderr, "Usage: ./example \"SELECT * FROM test;\"\n");
-        return -1;
+        query = query + " " + buf;
     }
 
-    std::string query = argv[1];
-
-    // parse a given query
     hsql::SQLParserResult *result = hsql::SQLParser::parseSQLString(query);
 
-    // check whether the parsing was successful
     if (result->isValid)
     {
-        printf("Parsed successfully!\n");
-        printf("Number of statements: %lu\n", result->size());
-
         for (hsql::SQLStatement * stmt : result->statements)
         {
             // process the statements...
-            hsql::printStatementInfo(stmt);
+            RC result = parseStatement(stmt);
         }
-
-        return 0;
     }
     else
     {
-        printf("Invalid SQL!\n");
-        return -1;
+        printf("line: %d, column: %d\n", result->errorLine, result->errorColumn);
+        printf("%s\n", result->errorMsg);
     }
+
+    return 0;
 }

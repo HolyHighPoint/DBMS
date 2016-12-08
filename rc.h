@@ -5,6 +5,9 @@ enum RC
     Success = 0,
     Error
 };
+
+const char *configFile = "config.db";
+
 struct RID
 {
     int pageId, rowId;

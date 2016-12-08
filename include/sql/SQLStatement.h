@@ -22,7 +22,8 @@ typedef enum
     kStmtRename,
     kStmtAlter,
     kStmtShow,
-    kStmtDesc
+    kStmtDesc,
+    kStmtUse
 } StatementType;
 
 /**
