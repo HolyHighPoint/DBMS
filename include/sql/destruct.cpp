@@ -2,15 +2,17 @@
 #include "Table.h"
 #include "SelectStatement.h"
 
-namespace hsql {
+namespace hsql
+{
 
 
-    TableRef::~TableRef() {
-        delete name;
-        delete alias;
-        delete select;
-        delete list;
-    }
+TableRef::~TableRef()
+{
+    delete name;
+    delete alias;
+    delete select;
+    delete list;
+}
 
 
 } // namespace hsql

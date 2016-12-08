@@ -3,18 +3,21 @@
 
 #include "SQLStatement.h"
 
-namespace hsql {
-    struct DescStatement : SQLStatement {
-        DescStatement(const char* name) :
-            SQLStatement(kStmtDesc),
-            name(name) {}
+namespace hsql
+{
+struct DescStatement : SQLStatement
+{
+    DescStatement(const char *name) :
+        SQLStatement(kStmtDesc),
+        name(name) {}
 
-        virtual ~DescStatement() {
-            delete name;
-        }
+    virtual ~DescStatement()
+    {
+        delete name;
+    }
 
-        const char* name;
-    };
+    const char *name;
+};
 
 } // namespace hsql
 #endif

@@ -5,101 +5,109 @@
 #include <stdio.h>
 #include <vector>
 
-namespace hsql {
+namespace hsql
+{
 
-    struct SelectStatement;
-    struct JoinDefinition;
-    struct TableRef;
-
-
-    /**
-     * @enum TableRefType
-     * Types table references
-     */
-    typedef enum {
-        kTableName,
-        kTableSelect,
-        kTableJoin,
-        kTableCrossProduct
-    } TableRefType;
+struct SelectStatement;
+struct JoinDefinition;
+struct TableRef;
 
 
-    /**
-     * @struct TableRef
-     * @brief Holds reference to tables. Can be either table names or a select statement.
-     */
-    struct TableRef {
-        TableRef(TableRefType type) :
-            type(type),
-            schema(NULL),
-            name(NULL),
-            alias(NULL),
-            select(NULL),
-            list(NULL),
-            join(NULL) {}
-
-        virtual ~TableRef();
-
-        TableRefType type;
-
-        char* schema;
-        char* name;
-        char* alias;
-
-        SelectStatement* select;
-        std::vector<TableRef*>* list;
-        JoinDefinition* join;
+/**
+ * @enum TableRefType
+ * Types table references
+ */
+typedef enum
+{
+    kTableName,
+    kTableSelect,
+    kTableJoin,
+    kTableCrossProduct
+} TableRefType;
 
 
-        /**
-         * Convenience accessor methods
-         */
-        inline bool hasSchema() {
-            return schema != NULL;
-        }
+/**
+ * @struct TableRef
+ * @brief Holds reference to tables. Can be either table names or a select statement.
+ */
+struct TableRef
+{
+    TableRef(TableRefType type) :
+        type(type),
+        schema(NULL),
+        name(NULL),
+        alias(NULL),
+        select(NULL),
+        list(NULL),
+        join(NULL) {}
 
-        inline char* getName() {
-            if (alias != NULL) return alias;
-            else return name;
-        }
-    };
+    virtual ~TableRef();
+
+    TableRefType type;
+
+    char *schema;
+    char *name;
+    char *alias;
+
+    SelectStatement *select;
+    std::vector<TableRef *> *list;
+    JoinDefinition *join;
 
 
     /**
-     * @enum JoinType
-     * Types of joins
+     * Convenience accessor methods
      */
-    typedef enum {
-        kJoinInner,
-        kJoinOuter,
-        kJoinLeft,
-        kJoinRight,
-    } JoinType;
+    inline bool hasSchema()
+    {
+        return schema != NULL;
+    }
+
+    inline char *getName()
+    {
+        if (alias != NULL) return alias;
+        else return name;
+    }
+};
 
 
-    /**
-     * @struct JoinDefinition
-     * @brief Definition of a join table
-     */
-    struct JoinDefinition {
-        JoinDefinition() :
-            left(NULL),
-            right(NULL),
-            condition(NULL),
-            type(kJoinInner) {}
+/**
+ * @enum JoinType
+ * Types of joins
+ */
+typedef enum
+{
+    kJoinInner,
+    kJoinOuter,
+    kJoinLeft,
+    kJoinRight,
+} JoinType;
 
-        virtual ~JoinDefinition() {
-            delete left;
-            delete right;
-            delete condition;
-        }
 
-        TableRef* left;
-        TableRef* right;
-        Expr* condition;
+/**
+ * @struct JoinDefinition
+ * @brief Definition of a join table
+ */
+struct JoinDefinition
+{
+    JoinDefinition() :
+        left(NULL),
+        right(NULL),
+        condition(NULL),
+        type(kJoinInner) {}
 
-        JoinType type;
-    };
+    virtual ~JoinDefinition()
+    {
+        delete left;
+        delete right;
+        delete condition;
+    }
+
+    TableRef *left;
+    TableRef *right;
+    Expr *condition;
+
+    JoinType type;
+};
 
 
 

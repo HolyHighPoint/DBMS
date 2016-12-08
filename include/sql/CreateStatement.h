@@ -3,68 +3,75 @@
 
 #include "SQLStatement.h"
 
-namespace hsql {
-    /**
-     * Represents definition of a table column
-     */
-    struct ColumnDefinition {
-        enum DataType {
-            INT,
-            INTEGER,
-            TINYINT,
-            CHAR,
-            VARCHAR,
-            PRIMARY
-        };
-
-        ColumnDefinition(char* name, DataType type, bool notnull, int64_t len=0) :
-            name(name),
-            type(type),
-            notnull(notnull),
-            len(len) {}
-
-        virtual ~ColumnDefinition() {
-            delete name;
-        }
-
-        char* name;
-        DataType type;
-        bool notnull;
-        int64_t len;
+namespace hsql
+{
+/**
+ * Represents definition of a table column
+ */
+struct ColumnDefinition
+{
+    enum DataType
+    {
+        INT,
+        INTEGER,
+        TINYINT,
+        CHAR,
+        VARCHAR,
+        PRIMARY
     };
 
-    /**
-     * Represents SQL Create statements.
-     * Example: "CREATE TABLE students (name TEXT, student_number INTEGER, city TEXT, grade DOUBLE)"
-     */
-    struct CreateStatement : SQLStatement {
-        enum CreateType {
-            kTable,
-            kTableFromTbl, // Hyrise file format
-            kDatabase
-        };
+    ColumnDefinition(char *name, DataType type, bool notnull, int64_t len = 0) :
+        name(name),
+        type(type),
+        notnull(notnull),
+        len(len) {}
 
-        CreateStatement(CreateType type) :
-            SQLStatement(kStmtCreate),
-            type(type),
-            ifNotExists(false),
-            filePath(NULL),
-            tableName(NULL),
-            columns(NULL) {};
+    virtual ~ColumnDefinition()
+    {
+        delete name;
+    }
 
-        virtual ~CreateStatement() {
-            delete columns;
-            delete filePath;
-            delete tableName;
-        }
+    char *name;
+    DataType type;
+    bool notnull;
+    int64_t len;
+};
 
-        CreateType type;
-
-        bool ifNotExists;
-        const char* filePath;
-        const char* tableName;
-        std::vector<ColumnDefinition*>* columns;
+/**
+ * Represents SQL Create statements.
+ * Example: "CREATE TABLE students (name TEXT, student_number INTEGER, city TEXT, grade DOUBLE)"
+ */
+struct CreateStatement : SQLStatement
+{
+    enum CreateType
+    {
+        kTable,
+        kTableFromTbl, // Hyrise file format
+        kDatabase
     };
+
+    CreateStatement(CreateType type) :
+        SQLStatement(kStmtCreate),
+        type(type),
+        ifNotExists(false),
+        filePath(NULL),
+        tableName(NULL),
+        columns(NULL) {};
+
+    virtual ~CreateStatement()
+    {
+        delete columns;
+        delete filePath;
+        delete tableName;
+    }
+
+    CreateType type;
+
+    bool ifNotExists;
+    const char *filePath;
+    const char *tableName;
+    std::vector<ColumnDefinition *> *columns;
+};
 
 } // namespace hsql
 #endif

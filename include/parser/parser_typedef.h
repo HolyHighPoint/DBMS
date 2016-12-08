@@ -6,7 +6,7 @@
 
 #ifndef YYtypeDEF_YY_SCANNER_T
 #define YYtypeDEF_YY_SCANNER_T
-typedef void* yyscan_t;
+typedef void *yyscan_t;
 #endif
 
 
@@ -14,17 +14,18 @@ typedef void* yyscan_t;
 #define YYLTYPE HSQL_LTYPE
 
 
-struct HSQL_CUST_LTYPE {
-	int first_line;
-	int first_column;
-	int last_line;
-	int last_column;
+struct HSQL_CUST_LTYPE
+{
+    int first_line;
+    int first_column;
+    int last_line;
+    int last_column;
 
-	int total_column;
+    int total_column;
 
-	// Placeholder
-	int placeholder_id;
-	std::vector<void*> placeholder_list;
+    // Placeholder
+    int placeholder_id;
+    std::vector<void *> placeholder_list;
 };
 
 #define HSQL_LTYPE HSQL_CUST_LTYPE

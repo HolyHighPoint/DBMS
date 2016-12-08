@@ -1,41 +1,48 @@
 
 #include "SQLParserResult.h"
 
-namespace hsql {
+namespace hsql
+{
 
-    SQLParserResult::SQLParserResult() :
-        isValid(true),
-        errorMsg(NULL) {};
-
-
-    SQLParserResult::SQLParserResult(SQLStatement* stmt) :
-        isValid(true),
-        errorMsg(NULL) {
-        addStatement(stmt);
-    };
+SQLParserResult::SQLParserResult() :
+    isValid(true),
+    errorMsg(NULL) {};
 
 
-    SQLParserResult::~SQLParserResult() {
-        for (std::vector<SQLStatement*>::iterator it = statements.begin(); it != statements.end(); ++it) {
-            delete *it;
-        }
+SQLParserResult::SQLParserResult(SQLStatement *stmt) :
+    isValid(true),
+    errorMsg(NULL)
+{
+    addStatement(stmt);
+};
 
-        delete errorMsg;
+
+SQLParserResult::~SQLParserResult()
+{
+    for (std::vector<SQLStatement *>::iterator it = statements.begin(); it != statements.end(); ++it)
+    {
+        delete *it;
     }
 
-
-    void SQLParserResult::addStatement(SQLStatement* stmt) {
-        statements.push_back(stmt);
-    }
+    delete errorMsg;
+}
 
 
-    SQLStatement* SQLParserResult::getStatement(int id) {
-        return statements[id];
-    }
+void SQLParserResult::addStatement(SQLStatement *stmt)
+{
+    statements.push_back(stmt);
+}
 
 
-    size_t SQLParserResult::size() {
-        return statements.size();
-    }
+SQLStatement *SQLParserResult::getStatement(int id)
+{
+    return statements[id];
+}
+
+
+size_t SQLParserResult::size()
+{
+    return statements.size();
+}
 
 } // namespace hsql
