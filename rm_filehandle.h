@@ -3,13 +3,17 @@
 #include "rc.h"
 #include <bufmanager/BufPageManager.h>
 #include <fileio/FileManager.h>
+#include <boost/filesystem.hpp>
 #include "rm_record.h"
+
+namespace bf = boost::filesystem;
 class RM_FileHandle
 {
 private:
     const int typePage = 0;
     const int leftPage = 1;
     BufPageManager *bpm;
+    bf::path path;
     int fileId;
     int findPage(int length)
     {
@@ -27,7 +31,8 @@ private:
         return -1;
     }
 public:
-    RM_FileHandle(BufPageManager *_bpm = NULL)
+    RM_FileHandle(bf::path _path, BufPageManager *_bpm = NULL)
+        :path(_path)
     {
         bpm = _bpm;
         fileId = -1;
@@ -46,6 +51,47 @@ public:
         return fileId;
     }
 
+    RM_Record makeHead()
+    {
+        bf::path filename = path/configFile;
+        std::ifstream fi(filename.string());
+        int n;
+        fi >> n;
+        RM_Record head;
+
+        for (int i = 0; i < n; i++)
+        {
+            std::string name, type;
+            bool notnull, index, primary;
+            int len;
+            getline(fi, name);
+
+            if (name.empty())getline(fi, name);
+
+            fi >> type >> len >> notnull >> index >> primary;
+            Type *data;
+
+            if (type == "INTEGER")
+            {
+                data = new Type_int(!notnull);
+            }
+            else if (type == "INT")
+            {
+                data = new Type_int(!notnull, 0, len);
+            }
+            else if (type == "CHAR" || type == "VARCHAR")
+            {
+                if (len <= 32)data = new Type_varchar<32>(!notnull);
+                else if (len <= 64)data = new Type_varchar<64>(!notnull);
+                else if (len <= 128)data = new Type_varchar<128>(!notnull);
+                else if (len <= 256)data = new Type_varchar<256>(!notnull);
+            }
+
+            head.push_back(data);
+        }
+
+        return head;
+    }
 
     RC InsertRec (const RM_Record &rec, RID &rid)
     {
@@ -150,15 +196,7 @@ public:
     std::vector<std::pair<RID, RM_Record> > ListRec()
     {
         int zero_index;
-        RM_Record b;
-        b.push_back(new Type_int());
-        b.push_back(new Type_varchar<>());
-        b.push_back(new Type_int());
-        b.push_back(new Type_varchar<>());
-        b.push_back(new Type_int());
-        b.push_back(new Type_int());
-        b.push_back(new Type_varchar<>());
-        b.push_back(new Type_varchar<>());
+        RM_Record b = makeHead();
         std::vector<std::pair<RID, RM_Record> > list;
 
         for (int i = leftPage + 1; i < PAGE_INT_NUM; i++)
@@ -168,19 +206,11 @@ public:
 
             if (num == 0)continue;
 
-            for (int j = 0; j < num; j++)
+            for (int j = 1; j <= num; j++)
             {
                 if (this->GetRec(RID(i, j), b) == Success)
                 {
-                    RM_Record b;
-                    b.push_back(new Type_int());
-                    b.push_back(new Type_varchar<>());
-                    b.push_back(new Type_int());
-                    b.push_back(new Type_varchar<>());
-                    b.push_back(new Type_int());
-                    b.push_back(new Type_int());
-                    b.push_back(new Type_varchar<>());
-                    b.push_back(new Type_varchar<>());
+                    RM_Record b = makeHead();
                     this->GetRec(RID(i, j), b);
                     list.push_back(make_pair(RID(i, j), b));
                 }

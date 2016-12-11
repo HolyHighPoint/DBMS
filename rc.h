@@ -6,7 +6,7 @@ enum RC
     Error
 };
 
-const char *configFile = "config.db";
+const char *configFile = "config";
 
 struct RID
 {

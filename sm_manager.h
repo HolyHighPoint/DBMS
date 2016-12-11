@@ -1,11 +1,17 @@
 #ifndef SM_MANAGER_H
 #define SM_MANAGER_H
 #include "rc.h"
-#include "rm_filehandle.h"
 #include <boost/filesystem.hpp>
 #include <fstream>
+#include <bufmanager/BufPageManager.h>
+#include <fileio/FileManager.h>
+#include <map>
 #include "sql/statements.h"
+#include "sql/Expr.h"
 #include "rm_record.h"
+#include "tm_manager.h"
+
+
 namespace bf = boost::filesystem;
 
 class SM_Manager
@@ -13,7 +19,21 @@ class SM_Manager
 private:
     SM_Manager()
     {
+        MyBitMap::initConst();
+        fm = new FileManager();
+        bpm = new BufPageManager(fm);
     }
+
+    ~SM_Manager()
+    {
+        for(auto it : tbsta)
+        {
+            delete it.second;
+        }
+        delete fm;
+        delete bpm;
+    }
+
     static SM_Manager *m_instance;
     class CGarbo
     {
@@ -26,6 +46,9 @@ private:
     };
     static CGarbo Garbo;
     std::string curdb;
+    FileManager *fm;
+    BufPageManager *bpm;
+    std::map<bf::path, TM_Manager*> tbsta;
 public:
     static SM_Manager *getInstance()
     {
@@ -33,47 +56,6 @@ public:
             m_instance = new SM_Manager();
 
         return m_instance;
-    }
-
-    RM_Record makeHead(bf::path filename)
-    {
-        std::ifstream fi(filename.string());
-        int n;
-        fi >> n;
-        RM_Record head;
-
-        for (int i = 0; i < n; i++)
-        {
-            string name, type;
-            bool notnull, index, primary;
-            int len;
-            getline(fi, name);
-
-            if (name.empty())getline(fi, name);
-
-            fi >> type >> len >> notnull >> index >> primary;
-            Type *data;
-
-            if (type == "INTEGER")
-            {
-                data = new Type_int(!notnull);
-            }
-            else if (type == "INT")
-            {
-                data = new Type_int(!notnull);
-            }
-            else if (type == "CHAR" || type == "VARCHAR")
-            {
-                if (len <= 32)data = new Type_varchar<32>(!notnull);
-                else if (len <= 64)data = new Type_varchar<64>(!notnull);
-                else if (len <= 128)data = new Type_varchar<128>(!notnull);
-                else if (len <= 256)data = new Type_varchar<256>(!notnull);
-            }
-
-            head.push_back(data);
-        }
-
-        return head;
     }
 
     RC createDatabase(const char *name)
@@ -102,7 +84,7 @@ public:
 
         bf::create_directory(path);
         std::ofstream fo(configFile, std::fstream::app);
-        fo << std::string(name) << endl;
+        fo << std::string(name) << std::endl;
         fo.close();
         return Success;
     }
@@ -138,7 +120,7 @@ public:
 
         std::ofstream fo(configFile);
 
-        for (std::string s : dbs)fo << s << endl;
+        for (std::string s : dbs)fo << s << std::endl;
 
         fo.close();
         return Success;
@@ -159,7 +141,7 @@ public:
 
                 if (bf::exists(path) && bf::is_directory(path))
                 {
-                    curdb = string(name);
+                    curdb = std::string(name);
                     f = true;
                 }
             }
@@ -246,7 +228,7 @@ public:
 
         std::ofstream fo((workPath / configFile).string());
 
-        for (std::string s : tbs)fo << s << endl;
+        for (std::string s : tbs)fo << s << std::endl;
 
         fo.close();
         return Success;
@@ -286,11 +268,11 @@ public:
 
         bf::create_directory(path);
         std::ofstream fo((workPath / configFile).string(), std::fstream::app);
-        fo << std::string(name) << endl;
+        fo << std::string(name) << std::endl;
         fo.close();
         fo.open((path / configFile).string());
 
-        string primary;
+        std::string primary;
 
         for (int i = 0; i < columns.size(); i++)
             if (columns[i]->type == hsql::ColumnDefinition::PRIMARY)
@@ -318,11 +300,11 @@ public:
                 }
 
 
-        fo << columns.size() << endl;
+        fo << columns.size() << std::endl;
 
         for (hsql::ColumnDefinition * it : columns)
         {
-            fo << it->name << endl;
+            fo << it->name << std::endl;
 
             switch (it->type)
             {
@@ -331,7 +313,7 @@ public:
                     break;
 
                 case hsql::ColumnDefinition::TINYINT:
-                    fo << "TINYINT" << -1 << " ";
+                    fo << "INTEGER" << -1 << " ";
                     break;
 
                 case hsql::ColumnDefinition::INT:
@@ -347,7 +329,7 @@ public:
                     break;
             }
 
-            fo << it->notnull << " " << (std::string(it->name) == primary) << " " << (std::string(it->name) == primary) << endl;
+            fo << it->notnull << " " << false/*(std::string(it->name) == primary)*/ << " " << (std::string(it->name) == primary) << std::endl;
 
         }
 
@@ -393,7 +375,7 @@ public:
 
         for (int i = 0; i < n; i++)
         {
-            string name, type;
+            std::string name, type;
             bool notnull, index, primary;
             int len;
             getline(fi, name);
@@ -411,7 +393,182 @@ public:
         return Success;
     }
 
+    RC insertRecord(const char *name, std::vector<hsql::Expr*> &values)
+    {
+        if (curdb.empty())
+        {
+            printf("There is no current database\n");
+            return Error;
+        }
+
+        bf::path workPath = bf::current_path() / curdb;
+        std::ifstream fi((workPath / configFile).string(), std::fstream::in);
+        std::string buf;
+        bool f;
+
+        while (getline(fi, buf))
+        {
+            if (strcmp(buf.c_str(), name) == 0)
+            {
+                bf::path path = workPath / name;
+
+                if (bf::exists(path) && bf::is_directory(path))
+                    f = true;
+            }
+        }
+
+        fi.close();
+
+        if (!f)
+        {
+            printf("Table %s doesn't exist\n", name);
+            return Error;
+        }
+
+        bf::path path = workPath / name;
+
+        auto it = tbsta.find(path);
+        if(it == tbsta.end())
+        {
+            tbsta.insert(make_pair(path, new TM_Manager(fm, bpm, path)));
+            it = tbsta.find(path);
+        }
+        return it->second->insertRecord(values);
+    }
+
+    RC selectRecord(const char *name, std::vector<hsql::Expr*> &fields, hsql::Expr *wheres)
+    {
+        if (curdb.empty())
+        {
+            printf("There is no current database\n");
+            return Error;
+        }
+
+        bf::path workPath = bf::current_path() / curdb;
+        std::ifstream fi((workPath / configFile).string(), std::fstream::in);
+        std::string buf;
+        bool f;
+
+        while (getline(fi, buf))
+        {
+            if (strcmp(buf.c_str(), name) == 0)
+            {
+                bf::path path = workPath / name;
+
+                if (bf::exists(path) && bf::is_directory(path))
+                    f = true;
+            }
+        }
+
+        fi.close();
+
+        if (!f)
+        {
+            printf("Table %s doesn't exist\n", name);
+            return Error;
+        }
+
+        bf::path path = workPath / name;
+
+        auto it = tbsta.find(path);
+        if(it == tbsta.end())
+        {
+            tbsta.insert(make_pair(path, new TM_Manager(fm, bpm, path)));
+            it = tbsta.find(path);
+        }
+        return it->second->selectRecord(fields, wheres);
+
+    }
+
+    RC deleteRecord(const char *name, hsql::Expr *wheres)
+    {
+        if (curdb.empty())
+        {
+            printf("There is no current database\n");
+            return Error;
+        }
+
+        bf::path workPath = bf::current_path() / curdb;
+        std::ifstream fi((workPath / configFile).string(), std::fstream::in);
+        std::string buf;
+        bool f;
+
+        while (getline(fi, buf))
+        {
+            if (strcmp(buf.c_str(), name) == 0)
+            {
+                bf::path path = workPath / name;
+
+                if (bf::exists(path) && bf::is_directory(path))
+                    f = true;
+            }
+        }
+
+        fi.close();
+
+        if (!f)
+        {
+            printf("Table %s doesn't exist\n", name);
+            return Error;
+        }
+
+        bf::path path = workPath / name;
+
+        auto it = tbsta.find(path);
+        if(it == tbsta.end())
+        {
+            tbsta.insert(make_pair(path, new TM_Manager(fm, bpm, path)));
+            it = tbsta.find(path);
+        }
+        return it->second->deleteRecord(wheres);
+
+    }
+
+    RC updateRecord(const char *name, std::vector<hsql::UpdateClause*> &updates, hsql::Expr *wheres)
+    {
+        if (curdb.empty())
+        {
+            printf("There is no current database\n");
+            return Error;
+        }
+
+        bf::path workPath = bf::current_path() / curdb;
+        std::ifstream fi((workPath / configFile).string(), std::fstream::in);
+        std::string buf;
+        bool f;
+
+        while (getline(fi, buf))
+        {
+            if (strcmp(buf.c_str(), name) == 0)
+            {
+                bf::path path = workPath / name;
+
+                if (bf::exists(path) && bf::is_directory(path))
+                    f = true;
+            }
+        }
+
+        fi.close();
+
+        if (!f)
+        {
+            printf("Table %s doesn't exist\n", name);
+            return Error;
+        }
+
+        bf::path path = workPath / name;
+
+        auto it = tbsta.find(path);
+        if(it == tbsta.end())
+        {
+            tbsta.insert(make_pair(path, new TM_Manager(fm, bpm, path)));
+            it = tbsta.find(path);
+        }
+        return it->second->updateRecord(updates, wheres);
+
+    }
 
 };
 SM_Manager *SM_Manager::m_instance = NULL;
+SM_Manager::CGarbo SM_Manager::Garbo = SM_Manager::Garbo;
 #endif

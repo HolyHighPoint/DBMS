@@ -18,6 +18,18 @@ public:
 
         total.push_back(value);
     }
+    void clear()
+    {
+        for (auto const & i : total)
+        {
+            delete i;
+        }
+    }
+    Type * get(int n)
+    {
+        return total[n];
+    }
+
     Byte toByte() const
     {
         Byte byte;
@@ -148,7 +160,7 @@ public:
             //printf("\n");
         }
 
-        printf("\n");
+        //printf("\n");
     }
 };
 #endif

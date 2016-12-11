@@ -953,13 +953,22 @@ private:
         return unmap(block, offset, sizeof(T));
     }
 };
+typedef Type_varchar<32> str32;
 typedef Type_varchar<64> str64;
+typedef Type_varchar<128> str128;
+typedef Type_varchar<256> str256;
 typedef std::pair<RID, RID> pair_rid;
 /* custom compare operator for STL algorithms */
 OPERATOR_KEYCMP(Type_int, RID, index_t)
 OPERATOR_KEYCMP(Type_int, RID, record_t)
+OPERATOR_KEYCMP(str32, RID, index_t)
+OPERATOR_KEYCMP(str32, RID, record_t)
 OPERATOR_KEYCMP(str64, RID, index_t)
 OPERATOR_KEYCMP(str64, RID, record_t)
+OPERATOR_KEYCMP(str128, RID, index_t)
+OPERATOR_KEYCMP(str128, RID, record_t)
+OPERATOR_KEYCMP(str256, RID, index_t)
+OPERATOR_KEYCMP(str256, RID, record_t)
 OPERATOR_KEYCMP(RID, pair_rid, index_t)
 OPERATOR_KEYCMP(RID, pair_rid, record_t)
 

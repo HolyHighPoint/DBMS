@@ -50,7 +50,7 @@ extern int hsql_debug;
 /* "%code requires" blocks.  */
 #line 42 "bison_parser.y" /* yacc.c:1909  */
 
-// %code requires block
+// %code requires block	
 
 #include "../sql/statements.h"
 #include "../SQLParserResult.h"
@@ -61,7 +61,7 @@ extern int hsql_debug;
     yylloc->first_line = yylloc->last_line; \
     yylloc->first_column = yylloc->last_column; \
     for(int i = 0; yytext[i] != '\0'; i++) { \
-        yylloc->total_column++; \
+    	yylloc->total_column++; \
         if(yytext[i] == '\n') { \
             yylloc->last_line++; \
             yylloc->last_column = 0; \
@@ -76,8 +76,8 @@ extern int hsql_debug;
 /* Token type.  */
 #ifndef HSQL_TOKENTYPE
 # define HSQL_TOKENTYPE
-enum hsql_tokentype
-{
+  enum hsql_tokentype
+  {
     SQL_IDENTIFIER = 258,
     SQL_STRING = 259,
     SQL_FLOATVAL = 260,
@@ -207,7 +207,7 @@ enum hsql_tokentype
     SQL_GREATER = 384,
     SQL_NOTNULL = 385,
     SQL_UMINUS = 386
-};
+  };
 #endif
 
 /* Value type.  */
@@ -217,42 +217,42 @@ union HSQL_STYPE
 {
 #line 101 "bison_parser.y" /* yacc.c:1909  */
 
-    double fval;
-    int64_t ival;
-    char *sval;
-    uintmax_t uval;
-    bool bval;
+	double fval;
+	int64_t ival;
+	char* sval;
+	uintmax_t uval;
+	bool bval;
 
-    hsql::SQLStatement *statement;
-    hsql::SelectStatement  *select_stmt;
-    hsql::ImportStatement  *import_stmt;
-    hsql::CreateStatement  *create_stmt;
-    hsql::InsertStatement  *insert_stmt;
-    hsql::DeleteStatement  *delete_stmt;
-    hsql::UpdateStatement  *update_stmt;
-    hsql::DropStatement    *drop_stmt;
-    hsql::ShowStatement    *show_stmt;
-    hsql::DescStatement    *desc_stmt;
-    hsql::UseStatement     *use_stmt;
-    hsql::PrepareStatement *prep_stmt;
-    hsql::ExecuteStatement *exec_stmt;
+	hsql::SQLStatement* statement;
+	hsql::SelectStatement* 	select_stmt;
+	hsql::ImportStatement* 	import_stmt;
+	hsql::CreateStatement* 	create_stmt;
+	hsql::InsertStatement* 	insert_stmt;
+	hsql::DeleteStatement* 	delete_stmt;
+	hsql::UpdateStatement* 	update_stmt;
+	hsql::DropStatement*   	drop_stmt;
+	hsql::ShowStatement*   	show_stmt;
+	hsql::DescStatement*   	desc_stmt;
+	hsql::UseStatement*   	use_stmt;
+	hsql::PrepareStatement* prep_stmt;
+	hsql::ExecuteStatement* exec_stmt;
 
-    hsql::TableRef *table;
-    hsql::Expr *expr;
-    hsql::OrderDescription *order;
-    hsql::OrderType order_type;
-    hsql::LimitDescription *limit;
-    hsql::ColumnDefinition *column_t;
-    hsql::GroupByDescription *group_t;
-    hsql::UpdateClause *update_t;
+	hsql::TableRef* table;
+	hsql::Expr* expr;
+	hsql::OrderDescription* order;
+	hsql::OrderType order_type;
+	hsql::LimitDescription* limit;
+	hsql::ColumnDefinition* column_t;
+	hsql::GroupByDescription* group_t;
+	hsql::UpdateClause* update_t;
 
-    hsql::SQLParserResult *stmt_list;
+	hsql::SQLParserResult* stmt_list;
 
-    std::vector<char *> *str_vec;
-    std::vector<hsql::TableRef *> *table_vec;
-    std::vector<hsql::ColumnDefinition *> *column_vec;
-    std::vector<hsql::UpdateClause *> *update_vec;
-    std::vector<hsql::Expr *> *expr_vec;
+	std::vector<char*>* str_vec;
+	std::vector<hsql::TableRef*>* table_vec;
+	std::vector<hsql::ColumnDefinition*>* column_vec;
+	std::vector<hsql::UpdateClause*>* update_vec;
+	std::vector<hsql::Expr*>* expr_vec;
 
 #line 258 "bison_parser.h" /* yacc.c:1909  */
 };
@@ -265,10 +265,10 @@ union HSQL_STYPE
 typedef struct HSQL_LTYPE HSQL_LTYPE;
 struct HSQL_LTYPE
 {
-    int first_line;
-    int first_column;
-    int last_line;
-    int last_column;
+  int first_line;
+  int first_column;
+  int last_line;
+  int last_column;
 };
 # define HSQL_LTYPE_IS_DECLARED 1
 # define HSQL_LTYPE_IS_TRIVIAL 1
@@ -276,6 +276,6 @@ struct HSQL_LTYPE
 
 
 
-int hsql_parse (hsql::SQLParserResult **result, yyscan_t scanner);
+int hsql_parse (hsql::SQLParserResult** result, yyscan_t scanner);
 
 #endif /* !YY_HSQL_BISON_PARSER_H_INCLUDED  */

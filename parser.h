@@ -65,6 +65,33 @@ RC parseDescStatement(DescStatement *stmt)
     return sm->descTable(stmt->name);
 }
 
+RC parseInsertStatement(InsertStatement *stmt)
+{
+    SM_Manager *sm = SM_Manager::getInstance();
+    return sm->insertRecord(stmt->tableName, *stmt->values);
+}
+
+RC parseDeleteStatement(DeleteStatement *stmt)
+{
+    SM_Manager *sm = SM_Manager::getInstance();
+    return sm->deleteRecord(stmt->tableName, stmt->expr);
+}
+
+RC parseSelectStatement(SelectStatement *stmt)
+{
+    SM_Manager *sm = SM_Manager::getInstance();
+    if(stmt->fromTable->type == kTableName)
+        return sm->selectRecord(stmt->fromTable->name, *stmt->selectList, stmt->whereClause);
+    else
+        return Error;
+}
+
+RC parseUpdateStatement(UpdateStatement *stmt)
+{
+    SM_Manager *sm = SM_Manager::getInstance();
+    return sm->updateRecord(stmt->table->name, *stmt->updates, stmt->where);
+}
+
 RC parseStatement(SQLStatement *stmt)
 {
     switch (stmt->type())
@@ -88,6 +115,22 @@ RC parseStatement(SQLStatement *stmt)
         case kStmtDesc:
             return parseDescStatement((DescStatement *) stmt);
             break;
+
+        case kStmtInsert:
+            return parseInsertStatement((InsertStatement *) stmt);
+            break;
+
+        case kStmtSelect:
+            return parseSelectStatement((SelectStatement *) stmt);
+            break;
+
+    case kStmtDelete:
+        return parseDeleteStatement((DeleteStatement *) stmt);
+        break;
+    case kStmtUpdate:
+        return parseUpdateStatement((UpdateStatement *) stmt);
+        break;
+
 
         default:
             break;

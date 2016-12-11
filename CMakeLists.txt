@@ -16,6 +16,6 @@ else()
         message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 aux_source_directory(parser DIR_PARSER_SRCS)
-add_executable(DBMS test.cpp rc.h rm_manager.h rm_filehandle.h rm_record.h type.h bptree.h ix_manager.h parser.h sm_manager.h ${DIR_PARSER_SRCS} ${Boost_LIBRARIES})
+add_executable(DBMS test.cpp rc.h rm_manager.h rm_filehandle.h rm_record.h type.h bptree.h ix_manager.h parser.h sm_manager.h tm_manager.h ${DIR_PARSER_SRCS} ${Boost_LIBRARIES})
 target_link_libraries(DBMS ${Boost_LIBRARIES})
 
