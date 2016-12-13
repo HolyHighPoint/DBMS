@@ -18,11 +18,16 @@ RC parseCreateStatement(CreateStatement *stmt)
     {
         return sm->createDatabase(stmt->tableName);
     }
-
-    if (stmt->type == CreateStatement::kTable)
+    else if (stmt->type == CreateStatement::kTable)
     {
         return sm->createTable(stmt->tableName, *stmt->columns);
     }
+    else if (stmt->type == CreateStatement::kIndex)
+    {
+        return sm->createIndex(stmt->tableName, stmt->indexName);
+    }
+
+    return Error;
 }
 
 RC parseDropStatement(DropStatement *stmt)
@@ -37,6 +42,12 @@ RC parseDropStatement(DropStatement *stmt)
     {
         return sm->dropTable(stmt->name);
     }
+    else if (stmt->type == DropStatement::kIndex)
+    {
+        return sm->dropIndex(stmt->name, stmt->index);
+    }
+
+    return Error;
 }
 
 RC parseUseStatement(UseStatement *stmt)
@@ -57,6 +68,8 @@ RC parseShowStatement(ShowStatement *stmt)
     {
         return sm->showTables();
     }
+
+    return Error;
 }
 
 RC parseDescStatement(DescStatement *stmt)
@@ -68,7 +81,14 @@ RC parseDescStatement(DescStatement *stmt)
 RC parseInsertStatement(InsertStatement *stmt)
 {
     SM_Manager *sm = SM_Manager::getInstance();
-    return sm->insertRecord(stmt->tableName, *stmt->values);
+    RC result = Success;
+
+    for (auto vec : *stmt->values)
+    {
+        if (sm->insertRecord(stmt->tableName, *vec) == Error) result = Error;
+    }
+
+    return result;
 }
 
 RC parseDeleteStatement(DeleteStatement *stmt)
@@ -80,7 +100,8 @@ RC parseDeleteStatement(DeleteStatement *stmt)
 RC parseSelectStatement(SelectStatement *stmt)
 {
     SM_Manager *sm = SM_Manager::getInstance();
-    if(stmt->fromTable->type == kTableName)
+
+    if (stmt->fromTable->type == kTableName)
         return sm->selectRecord(stmt->fromTable->name, *stmt->selectList, stmt->whereClause);
     else
         return Error;
@@ -124,12 +145,13 @@ RC parseStatement(SQLStatement *stmt)
             return parseSelectStatement((SelectStatement *) stmt);
             break;
 
-    case kStmtDelete:
-        return parseDeleteStatement((DeleteStatement *) stmt);
-        break;
-    case kStmtUpdate:
-        return parseUpdateStatement((UpdateStatement *) stmt);
-        break;
+        case kStmtDelete:
+            return parseDeleteStatement((DeleteStatement *) stmt);
+            break;
+
+        case kStmtUpdate:
+            return parseUpdateStatement((UpdateStatement *) stmt);
+            break;
 
 
         default:

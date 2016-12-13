@@ -10,8 +10,7 @@ namespace bf = boost::filesystem;
 class RM_FileHandle
 {
 private:
-    const int typePage = 0;
-    const int leftPage = 1;
+    const int leftPage = 0;
     BufPageManager *bpm;
     bf::path path;
     int fileId;
@@ -32,7 +31,7 @@ private:
     }
 public:
     RM_FileHandle(bf::path _path, BufPageManager *_bpm = NULL)
-        :path(_path)
+        : path(_path)
     {
         bpm = _bpm;
         fileId = -1;
@@ -45,15 +44,19 @@ public:
     {
         bpm = _bpm;
         fileId = _fileId;
+        int zero_index;
+        BufType b = bpm->getPage(fileId, leftPage, zero_index);
+
+        for (int i = 0; i < PAGE_INT_NUM; i++)b[i] = 0;
     }
     int getFileId()
     {
         return fileId;
     }
 
-    RM_Record makeHead()
+    RM_Record makeHead() const
     {
-        bf::path filename = path/configFile;
+        bf::path filename = path / configFile;
         std::ifstream fi(filename.string());
         int n;
         fi >> n;
@@ -146,6 +149,7 @@ public:
 
     RC GetRec (const RID &rid, RM_Record &rec) const
     {
+        rec = makeHead();
         int index;
         BufType b = bpm->getPage(fileId, rid.pageId, index);
         uch *bc = (uch *)b;

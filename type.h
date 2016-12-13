@@ -106,7 +106,10 @@ public:
     void print()
     {
         char buf[16];
-        if(len == -1)sprintf(buf, "| %%d | ");else sprintf(buf, "| %%0%dd | ", len);
+
+        if (len == -1)sprintf(buf, "| %%d | ");
+        else sprintf(buf, "| %%0%dd | ", len);
+
         if (null)printf(buf, 0);
         else printf(buf, value);
     }

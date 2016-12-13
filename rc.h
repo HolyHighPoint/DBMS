@@ -7,6 +7,7 @@ enum RC
 };
 
 const char *configFile = "config";
+const char *configFileBack = "configbak";
 
 struct RID
 {

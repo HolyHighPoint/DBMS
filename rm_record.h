@@ -25,7 +25,7 @@ public:
             delete i;
         }
     }
-    Type * get(int n)
+    Type *get(int n)
     {
         return total[n];
     }

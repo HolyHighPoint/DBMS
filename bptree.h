@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstring>
 #include <algorithm>
+#include <vector>
 
 #include "bptree.h"
 #include "type.h"
@@ -222,6 +223,54 @@ public:
         }
 
         return i;
+    }
+
+    std::vector<value_t> search_range(const key_t &left, const key_t &right) const
+    {
+        std::vector<value_t> values;
+
+        if (keycmp(left, right) > 0)
+            return values;
+
+        off_t off_left = search_leaf(left);
+        off_t off_right = search_leaf(right);
+        off_t off = off_left;
+        size_t i = 0;
+        record_t *b, *e;
+
+        leaf_node_t leaf;
+
+        while (off != off_right && off != 0)
+        {
+            map(&leaf, off);
+
+            // start point
+            if (off_left == off)
+                b = find(leaf, left);
+            else
+                b = begin(leaf);
+
+            // copy
+            e = leaf.children + leaf.n;
+
+            for (; b != e; ++b)
+                values.push_back(b->value);
+
+            off = leaf.next;
+        }
+
+        // the last leaf
+        if (true)
+        {
+            map(&leaf, off_right);
+
+            b = find(leaf, left);
+            e = std::upper_bound(begin(leaf), end(leaf), right);
+
+            for (; b != e; ++b)values.push_back(b->value);
+        }
+
+        return values;
     }
 
     int remove(const key_t &key)

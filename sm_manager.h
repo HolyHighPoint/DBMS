@@ -26,10 +26,11 @@ private:
 
     ~SM_Manager()
     {
-        for(auto it : tbsta)
+        for (auto it : tbsta)
         {
             delete it.second;
         }
+
         delete fm;
         delete bpm;
     }
@@ -48,7 +49,7 @@ private:
     std::string curdb;
     FileManager *fm;
     BufPageManager *bpm;
-    std::map<bf::path, TM_Manager*> tbsta;
+    std::map<bf::path, TM_Manager *> tbsta;
 public:
     static SM_Manager *getInstance()
     {
@@ -67,7 +68,7 @@ public:
         {
             if (strcmp(buf.c_str(), name) == 0)
             {
-                printf("Database %s already exists\n", name);
+                fprintf(stderr, "Database %s already exists\n", name);
                 return Error;
             }
         }
@@ -78,7 +79,7 @@ public:
 
         if (bf::exists(path))
         {
-            printf("Database directory %s already exists\n", path.c_str());
+            fprintf(stderr, "Database directory %s already exists\n", path.c_str());
             return Error;
         }
 
@@ -106,7 +107,7 @@ public:
 
         if (!f)
         {
-            printf("Database %s doesn't' exist\n", name);
+            fprintf(stderr, "Database %s doesn't' exist\n", name);
             return Error;
         }
 
@@ -151,7 +152,7 @@ public:
 
         if (!f)
         {
-            printf("Database %s doesn't exist\n", name);
+            fprintf(stderr, "Database %s doesn't exist\n", name);
             return Error;
         }
 
@@ -169,6 +170,7 @@ public:
             printf("%s\n", buf.c_str());
         }
 
+        printf("\n");
         fi.close();
         return Success;
     }
@@ -177,7 +179,7 @@ public:
     {
         if (curdb.empty())
         {
-            printf("There is no current database\n");
+            fprintf(stderr, "There is no current database\n");
             return Error;
         }
 
@@ -190,6 +192,8 @@ public:
             printf("%s\n", buf.c_str());
         }
 
+        printf("\n");
+
         fi.close();
     }
 
@@ -197,7 +201,7 @@ public:
     {
         if (curdb.empty())
         {
-            printf("There is no current database\n");
+            fprintf(stderr, "There is no current database\n");
             return Error;
         }
 
@@ -217,7 +221,7 @@ public:
 
         if (!f)
         {
-            printf("Table %s doesn't' exist\n", name);
+            fprintf(stderr, "Table %s doesn't' exist\n", name);
             return Error;
         }
 
@@ -239,7 +243,7 @@ public:
     {
         if (curdb.empty())
         {
-            printf("There is no current database\n");
+            fprintf(stderr, "There is no current database\n");
             return Error;
         }
 
@@ -251,7 +255,7 @@ public:
         {
             if (strcmp(buf.c_str(), name) == 0)
             {
-                printf("Table %s already exists\n", name);
+                fprintf(stderr, "Table %s already exists\n", name);
                 return Error;
             }
         }
@@ -262,7 +266,7 @@ public:
 
         if (bf::exists(path))
         {
-            printf("Table directory %s already exists\n", path.c_str());
+            fprintf(stderr, "Table directory %s already exists\n", path.c_str());
             return Error;
         }
 
@@ -279,7 +283,7 @@ public:
             {
                 if (!primary.empty())
                 {
-                    printf("Table %s already has primary key %s\n", name, primary.c_str());
+                    fprintf(stderr, "Table %s already has primary key %s\n", name, primary.c_str());
                     fo.close();
                     bf::remove(path / configFile);
                     return Error;
@@ -293,7 +297,7 @@ public:
             for (int j = i + 1; j < columns.size(); j++)
                 if (strcmp(columns[i]->name, columns[j]->name) == 0)
                 {
-                    printf("Table %s already has key %s\n", name, primary.c_str());
+                    fprintf(stderr, "Table %s already has key %s\n", name, primary.c_str());
                     fo.close();
                     bf::remove(path / configFile);
                     return Error;
@@ -329,7 +333,7 @@ public:
                     break;
             }
 
-            fo << it->notnull << " " << false/*(std::string(it->name) == primary)*/ << " " << (std::string(it->name) == primary) << std::endl;
+            fo << it->notnull << " " << (std::string(it->name) == primary) << " " << (std::string(it->name) == primary) << std::endl;
 
         }
 
@@ -340,7 +344,7 @@ public:
     {
         if (curdb.empty())
         {
-            printf("There is no current database\n");
+            fprintf(stderr, "There is no current database\n");
             return Error;
         }
 
@@ -364,7 +368,7 @@ public:
 
         if (!f)
         {
-            printf("Table %s doesn't exist\n", name);
+            fprintf(stderr, "Table %s doesn't exist\n", name);
             return Error;
         }
 
@@ -390,14 +394,16 @@ public:
             printf("--%s, %s, %s\n", notnull ? "Not NULL" : "NULL", index ? "Indexed" : "Unindexed", primary ? "Primary" : "Not Primary");
         }
 
+        printf("\n");
+
         return Success;
     }
 
-    RC insertRecord(const char *name, std::vector<hsql::Expr*> &values)
+    RC insertRecord(const char *name, std::vector<hsql::Expr *> &values)
     {
         if (curdb.empty())
         {
-            printf("There is no current database\n");
+            fprintf(stderr, "There is no current database\n");
             return Error;
         }
 
@@ -421,26 +427,28 @@ public:
 
         if (!f)
         {
-            printf("Table %s doesn't exist\n", name);
+            fprintf(stderr, "Table %s doesn't exist\n", name);
             return Error;
         }
 
         bf::path path = workPath / name;
 
         auto it = tbsta.find(path);
-        if(it == tbsta.end())
+
+        if (it == tbsta.end())
         {
             tbsta.insert(make_pair(path, new TM_Manager(fm, bpm, path)));
             it = tbsta.find(path);
         }
+
         return it->second->insertRecord(values);
     }
 
-    RC selectRecord(const char *name, std::vector<hsql::Expr*> &fields, hsql::Expr *wheres)
+    RC selectRecord(const char *name, std::vector<hsql::Expr *> &fields, hsql::Expr *wheres)
     {
         if (curdb.empty())
         {
-            printf("There is no current database\n");
+            fprintf(stderr, "There is no current database\n");
             return Error;
         }
 
@@ -464,18 +472,20 @@ public:
 
         if (!f)
         {
-            printf("Table %s doesn't exist\n", name);
+            fprintf(stderr, "Table %s doesn't exist\n", name);
             return Error;
         }
 
         bf::path path = workPath / name;
 
         auto it = tbsta.find(path);
-        if(it == tbsta.end())
+
+        if (it == tbsta.end())
         {
             tbsta.insert(make_pair(path, new TM_Manager(fm, bpm, path)));
             it = tbsta.find(path);
         }
+
         return it->second->selectRecord(fields, wheres);
 
     }
@@ -484,7 +494,7 @@ public:
     {
         if (curdb.empty())
         {
-            printf("There is no current database\n");
+            fprintf(stderr, "There is no current database\n");
             return Error;
         }
 
@@ -508,27 +518,29 @@ public:
 
         if (!f)
         {
-            printf("Table %s doesn't exist\n", name);
+            fprintf(stderr, "Table %s doesn't exist\n", name);
             return Error;
         }
 
         bf::path path = workPath / name;
 
         auto it = tbsta.find(path);
-        if(it == tbsta.end())
+
+        if (it == tbsta.end())
         {
             tbsta.insert(make_pair(path, new TM_Manager(fm, bpm, path)));
             it = tbsta.find(path);
         }
+
         return it->second->deleteRecord(wheres);
 
     }
 
-    RC updateRecord(const char *name, std::vector<hsql::UpdateClause*> &updates, hsql::Expr *wheres)
+    RC updateRecord(const char *name, std::vector<hsql::UpdateClause *> &updates, hsql::Expr *wheres)
     {
         if (curdb.empty())
         {
-            printf("There is no current database\n");
+            fprintf(stderr, "There is no current database\n");
             return Error;
         }
 
@@ -552,19 +564,207 @@ public:
 
         if (!f)
         {
-            printf("Table %s doesn't exist\n", name);
+            fprintf(stderr, "Table %s doesn't exist\n", name);
             return Error;
         }
 
         bf::path path = workPath / name;
 
         auto it = tbsta.find(path);
-        if(it == tbsta.end())
+
+        if (it == tbsta.end())
         {
             tbsta.insert(make_pair(path, new TM_Manager(fm, bpm, path)));
             it = tbsta.find(path);
         }
+
         return it->second->updateRecord(updates, wheres);
+
+    }
+
+    RC createIndex(const char *name, const char *indexname)
+    {
+        if (curdb.empty())
+        {
+            fprintf(stderr, "There is no current database\n");
+            return Error;
+        }
+
+        bf::path workPath = bf::current_path() / curdb;
+        std::ifstream fi((workPath / configFile).string());
+        std::string buf;
+        bool f;
+
+        while (getline(fi, buf))
+        {
+            if (strcmp(buf.c_str(), name) == 0)
+            {
+                bf::path path = workPath / name;
+
+                if (bf::exists(path) && bf::is_directory(path))
+                    f = true;
+            }
+        }
+
+        fi.close();
+
+        if (!f)
+        {
+            fprintf(stderr, "Table %s doesn't exist\n", name);
+            return Error;
+        }
+
+        bf::path path = workPath / name;
+        fi.open((path / configFile).string());
+        char str[1024];
+        int n;
+        fi >> n;
+        sprintf(str, "%d\n", n);
+        bool flag = false;
+
+        for (int i = 0; i < n; i++)
+        {
+            std::string name, type;
+            bool notnull, index, primary;
+            int len;
+            getline(fi, name);
+
+            if (name.empty())getline(fi, name);
+
+            sprintf(str + strlen(str), "%s\n", name.c_str());
+            fi >> type >> len >> notnull >> index >> primary;
+
+            if (string(indexname) == name)
+            {
+                if (index)
+                {
+                    fprintf(stderr, "Column %s Index already exists\n", indexname);
+                    return Error;
+                }
+
+                index = true;
+                flag = true;
+            }
+
+            sprintf(str + strlen(str), "%s %d %d %d %d\n", type.c_str(), len, notnull, index, primary);
+        }
+
+        fi.close();
+
+        if (!flag)
+        {
+            fprintf(stderr, "Column %s doesn't exist\n", indexname);
+            return Error;
+        }
+
+        std::ofstream fo((path / configFile).string());
+        fo << str;
+        fo.close();
+        auto it = tbsta.find(path);
+
+        if (it == tbsta.end())
+        {
+            tbsta.insert(make_pair(path, new TM_Manager(fm, bpm, path)));
+            it = tbsta.find(path);
+        }
+
+        return it->second->createIndex(true);
+
+    }
+
+    RC dropIndex(const char *name, const char *indexname)
+    {
+        if (curdb.empty())
+        {
+            fprintf(stderr, "There is no current database\n");
+            return Error;
+        }
+
+        bf::path workPath = bf::current_path() / curdb;
+        std::ifstream fi((workPath / configFile).string());
+        std::string buf;
+        bool f;
+
+        while (getline(fi, buf))
+        {
+            if (strcmp(buf.c_str(), name) == 0)
+            {
+                bf::path path = workPath / name;
+
+                if (bf::exists(path) && bf::is_directory(path))
+                    f = true;
+            }
+        }
+
+        fi.close();
+
+        if (!f)
+        {
+            fprintf(stderr, "Table %s doesn't exist\n", name);
+            return Error;
+        }
+
+        bf::path path = workPath / name;
+        fi.open((path / configFile).string());
+        char str[1024];
+        int n;
+        fi >> n;
+        sprintf(str, "%d\n", n);
+        bool flag = false;
+
+        for (int i = 0; i < n; i++)
+        {
+            std::string name, type;
+            bool notnull, index, primary;
+            int len;
+            getline(fi, name);
+
+            if (name.empty())getline(fi, name);
+
+            sprintf(str + strlen(str), "%s\n", name.c_str());
+            fi >> type >> len >> notnull >> index >> primary;
+
+            if (string(indexname) == name)
+            {
+                if (!index)
+                {
+                    fprintf(stderr, "Column %s Index doesn't exist\n", indexname);
+                    return Error;
+                }
+
+                if (primary)
+                {
+                    fprintf(stderr, "Column %s is Primary Key\n", indexname);
+                    return Error;
+                }
+
+                index = false;
+                flag = true;
+            }
+
+            sprintf(str + strlen(str), "%s %d %d %d %d\n", type.c_str(), len, notnull, index, primary);
+        }
+
+        fi.close();
+
+        if (!flag)
+        {
+            fprintf(stderr, "Column %s doesn't exist\n", indexname);
+            return Error;
+        }
+
+        std::ofstream fo((path / configFile).string());
+        fo << str;
+        fo.close();
+        auto it = tbsta.find(path);
+
+        if (it == tbsta.end())
+        {
+            tbsta.insert(make_pair(path, new TM_Manager(fm, bpm, path)));
+            it = tbsta.find(path);
+        }
+
+        return it->second->dropIndex();
 
     }
 
