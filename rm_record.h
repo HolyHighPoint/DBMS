@@ -30,6 +30,11 @@ public:
         return total[n];
     }
 
+    int getSize() const
+    {
+        return total.size();
+    }
+
     Byte toByte() const
     {
         Byte byte;
