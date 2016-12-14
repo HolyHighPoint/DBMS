@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <string>
 #include "SQLParser.h"
 #include "rc.h"
@@ -7,15 +8,17 @@
 using namespace std;
 int main(int argc, char *argv[])
 {
-    if (argc > 1)freopen(argv[1], "r", stdin);
-
-    char buf[1024];
-    string query;
-
-    while (scanf("%s", buf) != EOF)
+    if (argc > 1)
     {
-        query = query + " " + buf;
+        if (!freopen(argv[1], "r", stdin))
+        {
+            fprintf(stderr, "File %s not found\n", argv[1]);
+        }
     }
+
+    string query((istreambuf_iterator<char>(cin)), istreambuf_iterator<char>());
+
+    for (int i = 0; i < query.length(); i++)if (query[i] == '\r')query[i] = ' ';
 
     hsql::SQLParserResult *result = hsql::SQLParser::parseSQLString(query);
 
@@ -29,8 +32,8 @@ int main(int argc, char *argv[])
     }
     else
     {
-        printf("line: %d, column: %d\n", result->errorLine, result->errorColumn);
-        printf("%s\n", result->errorMsg);
+        fprintf(stderr, "line: %d, column: %d\n", result->errorLine + 1, result->errorColumn + 1);
+        fprintf(stderr, "%s\n", result->errorMsg);
     }
 
     return 0;

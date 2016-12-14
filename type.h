@@ -33,6 +33,10 @@ public:
     {
         return NULL;
     }
+    void setnull()
+    {
+        null = true;
+    }
 
     static Type *make(bool null, const char *str, int maxlen);
     static Type *make(bool null, int value, int maxlen);

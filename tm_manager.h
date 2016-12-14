@@ -220,8 +220,31 @@ public:
                             return Error;
                         }
 
-                        data = Type::make(false, values[i]->name, strlen(values[i]->name));
+                        data = Type::make(false, values[i]->name, len);
 
+                    }
+                    else
+                    {
+                        fprintf(stderr, "Values[%d] type is error.\n", i);
+                        return Error;
+                    }
+
+                    break;
+
+                case hsql::kExprLiteralNull:
+                    if (notnull)
+                    {
+                        fprintf(stderr, "Values[%d] can't be null.\n", i);
+                        return Error;
+                    }
+
+                    if (type == "INTEGER" || type == "INT")
+                    {
+                        data = Type::make(true, 0, len);
+                    }
+                    else if (type == "CHAR" || type == "VARCHAR")
+                    {
+                        data = Type::make(true, "", 0);
                     }
                     else
                     {
@@ -287,7 +310,11 @@ public:
 
                 Type *t = rec.get(it->second);
 
-                if (t->isInt())
+                if (t->null)
+                {
+                    tleft = 3;
+                }
+                else if (t->isInt())
                 {
                     tleft = 0;
                     ileft = t->getValue();
@@ -318,6 +345,10 @@ public:
             case hsql::kExprOperator:
                 tleft = 2;
                 check(*expr.expr, st, rec, bleft);
+                break;
+
+            case hsql::kExprLiteralNull:
+                tleft = 3;
                 break;
 
             default:
@@ -358,7 +389,11 @@ public:
 
                 Type *t = rec.get(it->second);
 
-                if (t->isInt())
+                if (t->null)
+                {
+                    tright = 3;
+                }
+                else if (t->isInt())
                 {
                     tright = 0;
                     iright = t->getValue();
@@ -391,9 +426,19 @@ public:
                 check(*expr.expr2, st, rec, bright);
                 break;
 
+            case hsql::kExprLiteralNull:
+                tright = 3;
+                break;
+
             default:
                 fprintf(stderr, "The Expr Literal Type is error.\n");
                 return Error;
+        }
+
+        if ((tleft != 3 && tright == 3) || (tleft == 3 && tright != 3))
+        {
+            flag = false;
+            return Success;
         }
 
         if (tleft != tright)
@@ -412,6 +457,8 @@ public:
                         flag = (ileft == iright);
                     else if (tleft == 1)
                         flag = (strcmp(cleft, cright) == 0);
+                    else if (tleft == 3)
+                        flag = true;
                     else
                     {
                         fprintf(stderr, "The Expr Type is error.\n");
@@ -506,8 +553,8 @@ public:
 
                 break;
 
-//        case hsql::Expr::NOT:
-//            break;
+                //        case hsql::Expr::NOT:
+                //            break;
             default:
                 fprintf(stderr, "The Expr Operation is error.\n");
                 return Error;
@@ -608,6 +655,10 @@ public:
                 cright = expr.expr2->name;
                 break;
 
+            case hsql::kExprLiteralNull:
+                tright = 4;
+                break;
+
             case hsql::kExprOperator:
             {
                 tright = 1;
@@ -651,15 +702,17 @@ public:
                 case hsql::Expr::OR:
                     for (auto it : sleft)
                     {
-                        if (ans.find(it.first) != ans.end())
+                        if (ans.find(it.first) == ans.end())
                             ans.insert(it);
                     }
 
                     for (auto it : sright)
                     {
-                        if (ans.find(it.first) != ans.end())
+                        if (ans.find(it.first) == ans.end())
                             ans.insert(it);
                     }
+
+                    flag = true;
 
                     break;
 
@@ -778,6 +831,33 @@ public:
                 fprintf(stderr, "The Expr Column Type is error.\n");
                 return Error;
             }
+
+            switch (expr.op_type)
+            {
+                case hsql::Expr::SIMPLE_OP:
+                    if (expr.op_char == '=')
+                    {
+                        std::vector<RID> vec = index->SearchEntry(data);
+
+                        for (auto rid : vec)
+                        {
+                            RM_Record rec;
+                            rmfh->GetRec(rid, rec);
+                            ans.insert(make_pair(rid, rec));
+                        }
+                    }
+
+                    break;
+
+                default:
+                    fprintf(stderr, "Try to use brute-force...\n");
+                    flag = false;
+                    return Success;
+            }
+        }
+        else if (tleft == 0 && tright == 4)
+        {
+            data->setnull();
 
             switch (expr.op_type)
             {
@@ -1141,7 +1221,7 @@ public:
                 case hsql::kExprLiteralInt:
                     if (type == "INTEGER" || type == "INT")
                     {
-                        data = new Type_int(!notnull, expr->ival);
+                        data = Type::make(false, expr->ival, len);
                     }
                     else
                     {
@@ -1160,16 +1240,37 @@ public:
                             return Error;
                         }
 
-                        if (len <= 32)data = new Type_varchar<32>(!notnull, expr->name, strlen(expr->name));
-                        else if (len <= 64)data = new Type_varchar<64>(!notnull, expr->name, strlen(expr->name));
-                        else if (len <= 128)data = new Type_varchar<128>(!notnull, expr->name, strlen(expr->name));
-                        else if (len <= 256)data = new Type_varchar<256>(!notnull, expr->name, strlen(expr->name));
+                        data = Type::make(false, expr->name, len);
                     }
                     else
                     {
                         fprintf(stderr, "Update type is error.\n");
                         return Error;
                     }
+
+                    break;
+
+                case hsql::kExprLiteralNull:
+                    if (notnull)
+                    {
+                        fprintf(stderr, "Values[%d] can't be null.\n", i);
+                        return Error;
+
+                    }
+                    else if (type == "INTEGER" || type == "INT")
+                    {
+                        data = Type::make(true, 0, len);
+                    }
+                    else if (type == "CHAR" || type == "VARCHAR")
+                    {
+                        data = Type::make(true, "", len);
+                    }
+                    else
+                    {
+                        fprintf(stderr, "Update Column %s type is error.\n", name.c_str());
+                        return Error;
+                    }
+
 
                     break;
 

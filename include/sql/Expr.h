@@ -17,6 +17,7 @@ typedef enum
     kExprLiteralFloat,
     kExprLiteralString,
     kExprLiteralInt,
+    kExprLiteralNull,
     kExprStar,
     kExprPlaceholder,
     kExprColumnRef,
@@ -97,7 +98,7 @@ struct Expr
     }
     inline bool isLiteral()
     {
-        return isType(kExprLiteralInt) || isType(kExprLiteralFloat) || isType(kExprLiteralString) || isType(kExprPlaceholder);
+        return isType(kExprLiteralInt) || isType(kExprLiteralFloat) || isType(kExprLiteralString) || isType(kExprLiteralNull) || isType(kExprPlaceholder);
     }
     inline bool hasAlias()
     {
@@ -132,6 +133,7 @@ struct Expr
     static Expr *makeLiteral(int64_t val);
     static Expr *makeLiteral(double val);
     static Expr *makeLiteral(char *val);
+    static Expr *makeLiteral();
 
     static Expr *makeColumnRef(char *name);
     static Expr *makeColumnRef(char *table, char *name);

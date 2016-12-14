@@ -72,6 +72,12 @@ Expr *Expr::makeLiteral(char *string)
     return e;
 }
 
+Expr *Expr::makeLiteral()
+{
+    Expr *e = new Expr(kExprLiteralNull);
+    return e;
+}
+
 
 Expr *Expr::makeColumnRef(char *name)
 {
