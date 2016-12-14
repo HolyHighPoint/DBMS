@@ -67,18 +67,15 @@ public:
 
             if (type == "INTEGER")
             {
-                data = new Type_int(!notnull);
+                data = Type::make(!notnull, 0, -1);
             }
             else if (type == "INT")
             {
-                data = new Type_int(!notnull, 0, len);
+                data = Type::make(!notnull, 0, len);
             }
             else if (type == "CHAR" || type == "VARCHAR")
             {
-                if (len <= 32)data = new Type_varchar<32>(!notnull);
-                else if (len <= 64)data = new Type_varchar<64>(!notnull);
-                else if (len <= 128)data = new Type_varchar<128>(!notnull);
-                else if (len <= 256)data = new Type_varchar<256>(!notnull);
+                data = Type::make(!notnull, "", len);
             }
 
             if (index && indexst.find(name) == indexst.end())
@@ -204,7 +201,7 @@ public:
                 case hsql::kExprLiteralInt:
                     if (type == "INTEGER" || type == "INT")
                     {
-                        data = new Type_int(!notnull, values[i]->ival);
+                        data = Type::make(false, values[i]->ival, len);
                     }
                     else
                     {
@@ -223,10 +220,8 @@ public:
                             return Error;
                         }
 
-                        if (len <= 32)data = new Type_varchar<32>(!notnull, values[i]->name, strlen(values[i]->name));
-                        else if (len <= 64)data = new Type_varchar<64>(!notnull, values[i]->name, strlen(values[i]->name));
-                        else if (len <= 128)data = new Type_varchar<128>(!notnull, values[i]->name, strlen(values[i]->name));
-                        else if (len <= 256)data = new Type_varchar<256>(!notnull, values[i]->name, strlen(values[i]->name));
+                        data = Type::make(false, values[i]->name, strlen(values[i]->name));
+
                     }
                     else
                     {
@@ -292,30 +287,15 @@ public:
 
                 Type *t = rec.get(it->second);
 
-                if (dynamic_cast<Type_int *>(t) != NULL)
+                if (t->isInt())
                 {
                     tleft = 0;
-                    ileft = ((Type_int *)(t))->getValue();
+                    ileft = t->getValue();
                 }
-                else if (dynamic_cast<Type_varchar<32>*>(t) != NULL)
+                else if (t->isStr())
                 {
                     tleft = 1;
-                    cleft = ((Type_varchar<32> *)(t))->getStr();
-                }
-                else if (dynamic_cast<Type_varchar<64>*>(t) != NULL)
-                {
-                    tleft = 1;
-                    cleft = ((Type_varchar<64> *)(t))->getStr();
-                }
-                else if (dynamic_cast<Type_varchar<128>*>(t) != NULL)
-                {
-                    tleft = 1;
-                    cleft = ((Type_varchar<128> *)(t))->getStr();
-                }
-                else if (dynamic_cast<Type_varchar<256>*>(t) != NULL)
-                {
-                    tleft = 1;
-                    cleft = ((Type_varchar<256> *)(t))->getStr();
+                    cleft = t->getStr();
                 }
                 else
                 {
@@ -378,30 +358,15 @@ public:
 
                 Type *t = rec.get(it->second);
 
-                if (dynamic_cast<Type_int *>(t) != NULL)
+                if (t->isInt())
                 {
                     tright = 0;
-                    iright = ((Type_int *)(t))->getValue();
+                    iright = t->getValue();
                 }
-                else if (dynamic_cast<Type_varchar<32>*>(t) != NULL)
+                else if (t->isStr())
                 {
                     tright = 1;
-                    cright = ((Type_varchar<32> *)(t))->getStr();
-                }
-                else if (dynamic_cast<Type_varchar<64>*>(t) != NULL)
-                {
-                    tright = 1;
-                    cright = ((Type_varchar<64> *)(t))->getStr();
-                }
-                else if (dynamic_cast<Type_varchar<128>*>(t) != NULL)
-                {
-                    tright = 1;
-                    cright = ((Type_varchar<128> *)(t))->getStr();
-                }
-                else if (dynamic_cast<Type_varchar<256>*>(t) != NULL)
-                {
-                    tright = 1;
-                    cright = ((Type_varchar<256> *)(t))->getStr();
+                    cright = t->getStr();
                 }
                 else
                 {
@@ -705,11 +670,7 @@ public:
         }
         else if (tleft == 0 && tright == 2)
         {
-            if (dynamic_cast<Type_int *>(data) != NULL)
-            {
-                ((Type_int *)data)->setValue(iright);
-            }
-            else
+            if (!data->set(iright))
             {
                 fprintf(stderr, "The Expr Column Type is error.\n");
                 return Error;
@@ -812,23 +773,7 @@ public:
         }
         else if (tleft == 0 && tright == 3)
         {
-            if (dynamic_cast<Type_varchar<32>*>(data) != NULL)
-            {
-                ((Type_varchar<32> *)data)->setStr(cright, strlen(cright));
-            }
-            else if (dynamic_cast<Type_varchar<64>*>(data) != NULL)
-            {
-                ((Type_varchar<64> *)data)->setStr(cright, strlen(cright));
-            }
-            else if (dynamic_cast<Type_varchar<128>*>(data) != NULL)
-            {
-                ((Type_varchar<128> *)data)->setStr(cright, strlen(cright));
-            }
-            else if (dynamic_cast<Type_varchar<256>*>(data) != NULL)
-            {
-                ((Type_varchar<256> *)data)->setStr(cright, strlen(cright));
-            }
-            else
+            if (!data->set(cright, strlen(cright)))
             {
                 fprintf(stderr, "The Expr Column Type is error.\n");
                 return Error;

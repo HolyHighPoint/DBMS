@@ -21,6 +21,21 @@ public:
         : sizeType(_sizeType), null(_null)
     {
     }
+    bool set(const char *str, int length);
+    bool set(int value);
+    bool isStr();
+    bool isInt();
+    virtual int getValue()
+    {
+        return 0;
+    }
+    virtual const char *getStr()
+    {
+        return NULL;
+    }
+
+    static Type *make(bool null, const char *str, int maxlen);
+    static Type *make(bool null, int value, int maxlen);
 };
 
 //class Type_tinyint : public Type
@@ -74,7 +89,6 @@ public:
 //    bool operator == (const Type_tinyint &t) const
 //    {
 //        if (null && t.null) return true;
-
 //        return value == t.value;
 //    }
 //};
@@ -152,7 +166,7 @@ public:
     {
         memset(str, 0, sizeof(char)*size);
         length = _length;
-        memcpy(str, _str, length * sizeof(char));
+        memcpy(str, _str, std::min(length, size) * sizeof(char));
         str[length] = '\000';
     }
     ~Type_varchar()
@@ -173,7 +187,7 @@ public:
         memset(str, 0, sizeof(char)*size);
         const char *_str = (char *)byte.a;
         length = byte.length;
-        memcpy(str, _str, length * sizeof(char));
+        memcpy(str, _str, std::min(length, size) * sizeof(char));
         str[length] = '\000';
     }
     void print()
@@ -189,7 +203,7 @@ public:
     {
         memset(str, 0, sizeof(char)*size);
         length = _length;
-        memcpy(str, _str, length * sizeof(char));
+        memcpy(str, _str, std::min(length, size) * sizeof(char));
         str[length] = '\000';
     }
     bool operator < (const Type_varchar &t) const
@@ -208,5 +222,96 @@ public:
         return strcmp(str, t.str) == 0;
     }
 };
+
+
+bool Type::set(const char *str, int length)
+{
+    if (dynamic_cast<Type_varchar<32>*>(this) != NULL)
+    {
+        ((Type_varchar<32> *)this)->setStr(str, length);
+    }
+    else if (dynamic_cast<Type_varchar<64>*>(this) != NULL)
+    {
+        ((Type_varchar<64> *)this)->setStr(str, length);
+    }
+    else if (dynamic_cast<Type_varchar<128>*>(this) != NULL)
+    {
+        ((Type_varchar<128> *)this)->setStr(str, length);
+    }
+    else if (dynamic_cast<Type_varchar<256>*>(this) != NULL)
+    {
+        ((Type_varchar<256> *)this)->setStr(str, length);
+    }
+    else
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool Type::set(int value)
+{
+    if (dynamic_cast<Type_int *>(this) != NULL)
+    {
+        ((Type_int *)this)->setValue(value);
+        return true;
+    }
+
+    return false;
+}
+
+bool Type::isStr()
+{
+    if (dynamic_cast<Type_varchar<32>*>(this) != NULL)
+    {
+        return true;
+    }
+    else if (dynamic_cast<Type_varchar<64>*>(this) != NULL)
+    {
+        return true;
+    }
+    else if (dynamic_cast<Type_varchar<128>*>(this) != NULL)
+    {
+        return true;
+    }
+    else if (dynamic_cast<Type_varchar<256>*>(this) != NULL)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool Type::isInt()
+{
+    if (dynamic_cast<Type_int *>(this) != NULL)
+    {
+        return true;
+    }
+
+    return false;
+}
+
+Type *Type::make(bool null, const char *str, int maxlen)
+{
+    Type *data = NULL;
+
+    if (maxlen <= 32)data = new Type_varchar<32>(null, str, strlen(str));
+    else if (maxlen <= 64)data = new Type_varchar<64>(null, str, strlen(str));
+    else if (maxlen <= 128)data = new Type_varchar<128>(null, str, strlen(str));
+    else if (maxlen <= 256)data = new Type_varchar<256>(null, str, strlen(str));
+
+    return data;
+}
+
+Type *Type::make(bool null, int value, int maxlen)
+{
+    Type *data = NULL;
+    data = new Type_int(null, value, maxlen);
+    return data;
+}
 
 #endif

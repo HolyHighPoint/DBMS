@@ -76,18 +76,15 @@ public:
 
             if (type == "INTEGER")
             {
-                data = new Type_int(!notnull);
+                data = Type::make(!notnull, 0, -1);
             }
             else if (type == "INT")
             {
-                data = new Type_int(!notnull, 0, len);
+                data = Type::make(!notnull, 0, len);
             }
             else if (type == "CHAR" || type == "VARCHAR")
             {
-                if (len <= 32)data = new Type_varchar<32>(!notnull);
-                else if (len <= 64)data = new Type_varchar<64>(!notnull);
-                else if (len <= 128)data = new Type_varchar<128>(!notnull);
-                else if (len <= 256)data = new Type_varchar<256>(!notnull);
+                data = Type::make(!notnull, "", len);
             }
 
             head.push_back(data);
