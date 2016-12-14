@@ -40,14 +40,16 @@ public:
     {
 
     }
-    void init (BufPageManager *_bpm, int _fileId)
+    void init (BufPageManager *_bpm, int _fileId, bool clear)
     {
         bpm = _bpm;
         fileId = _fileId;
         int zero_index;
         BufType b = bpm->getPage(fileId, leftPage, zero_index);
 
-        for (int i = 0; i < PAGE_INT_NUM; i++)b[i] = 0;
+        for (int i = 0; clear && i < PAGE_INT_NUM; i++)b[i] = 0;
+
+        bpm->markDirty(zero_index);
     }
     int getFileId()
     {

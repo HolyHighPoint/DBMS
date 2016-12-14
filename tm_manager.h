@@ -26,8 +26,9 @@ public:
     {
         rmm = new RM_Manager(fm, bpm);
         rmfh = new RM_FileHandle(path);
+        bool exists = boost::filesystem::exists(path / "data.db");
         rmm->CreateFile((path / "data.db").string().c_str());
-        rmm->OpenFile((path / "data.db").string().c_str(), rmfh);
+        rmm->OpenFile((path / "data.db").string().c_str(), rmfh, !exists);
         createIndex();
     }
 

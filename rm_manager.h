@@ -4,6 +4,7 @@
 #include <bufmanager/BufPageManager.h>
 #include <fileio/FileManager.h>
 #include "rm_filehandle.h"
+
 class RM_Manager
 {
 private:
@@ -29,11 +30,11 @@ public:
             return Error;
         }
     }
-    RC OpenFile(const char *fileName, RM_FileHandle *fileHandle)
+    RC OpenFile(const char *fileName, RM_FileHandle *fileHandle, bool clear = false)
     {
         int fileId;
         bool flag = fm->openFile(fileName, fileId);
-        fileHandle->init(bpm, fileId);
+        fileHandle->init(bpm, fileId, clear);
 
         if (flag)
         {
