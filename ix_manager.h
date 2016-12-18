@@ -109,6 +109,7 @@ public:
                 link.first = rid;
                 bptree_rid->update(first, link);
                 bptree_rid->insert(rid, std::make_pair(RID(), first));
+                bptree_rid->update(rid, std::make_pair(RID(), first));
                 bptree_int->update(*(Type_int *)data, rid);
             }
         }
@@ -142,6 +143,7 @@ public:
                 link.first = rid;
                 bptree_rid->update(first, link);
                 bptree_rid->insert(rid, std::make_pair(RID(), first));
+                bptree_rid->update(rid, std::make_pair(RID(), first));
                 bptree_str_32->update(*(Type_varchar<32> *)data, rid);
             }
         }
@@ -176,6 +178,7 @@ public:
                 link.first = rid;
                 bptree_rid->update(first, link);
                 bptree_rid->insert(rid, std::make_pair(RID(), first));
+                bptree_rid->update(rid, std::make_pair(RID(), first));
                 bptree_str_64->update(*(Type_varchar<64> *)data, rid);
             }
         }
@@ -209,6 +212,7 @@ public:
                 link.first = rid;
                 bptree_rid->update(first, link);
                 bptree_rid->insert(rid, std::make_pair(RID(), first));
+                bptree_rid->update(rid, std::make_pair(RID(), first));
                 bptree_str_128->update(*(Type_varchar<128> *)data, rid);
             }
         }
@@ -242,6 +246,7 @@ public:
                 link.first = rid;
                 bptree_rid->update(first, link);
                 bptree_rid->insert(rid, std::make_pair(RID(), first));
+                bptree_rid->update(rid, std::make_pair(RID(), first));
                 bptree_str_256->update(*(Type_varchar<256> *)data, rid);
             }
         }

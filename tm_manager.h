@@ -1383,7 +1383,7 @@ public:
             rmfh->GetRec(rec, record);
 
             for (int i = 0; i < indexv.size(); i++)if (indexv[i])
-                indexv[i]->DeleteEntry(record.get(i), rec);
+                    indexv[i]->DeleteEntry(record.get(i), rec);
 
             record.clear();
             rmfh->DeleteRec(rec);
@@ -1395,7 +1395,7 @@ public:
             rmfh->InsertRec(rec, rid);
 
             for (int i = 0; i < indexv.size(); i++)if (indexv[i])
-                indexv[i]->InsertEntry(rec.get(i), rid);
+                    indexv[i]->InsertEntry(rec.get(i), rid);
         }
 
 
