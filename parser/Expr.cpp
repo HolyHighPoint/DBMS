@@ -1,7 +1,8 @@
-
 #include "sql/Expr.h"
 #include <stdio.h>
 #include <string.h>
+#include <string>
+using namespace std;
 
 namespace hsql
 {
@@ -108,6 +109,67 @@ Expr *Expr::makePlaceholder(int id)
     Expr *e = new Expr(kExprPlaceholder);
     e->ival = id;
     return e;
+}
+
+string Expr::toString()
+{
+    char buf[1024];
+
+    switch (type)
+    {
+        case kExprStar:
+            return "*";
+
+        case kExprColumnRef:
+            return name;
+
+        case kExprLiteralFloat:
+            sprintf(buf, "%lf", fval);
+            return buf;
+
+        case kExprLiteralInt:
+            sprintf(buf, "%ld", ival);
+            return buf;
+
+        case kExprLiteralString:
+            sprintf(buf, "\'%s\'", name);
+            return buf;
+
+        case kExprFunctionRef:
+            sprintf(buf, "%s ( %s )", name, expr->name);
+            return buf;
+
+        case kExprOperator:
+        {
+            string left, right;
+
+            if (expr)left = expr->toString();
+
+            if (expr2)right = expr2->toString();
+
+            switch (op_type)
+            {
+                case Expr::SIMPLE_OP:
+                    sprintf(buf, "( %s ) %c ( %s )", left.c_str(), op_char, right.c_str());
+                    return buf;
+
+                case Expr::AND:
+                    sprintf(buf, "( %s ) AND ( %s )", left.c_str(), right.c_str());
+                    return buf;
+
+                case Expr::OR:
+                    sprintf(buf, "( %s ) OR ( %s )", left.c_str(), right.c_str());
+                    return buf;
+
+                case Expr::NOT:
+                    sprintf(buf, "NOT ( %s )", left.c_str());
+                    return buf;
+            }
+        }
+
+        default:
+            return "";
+    }
 }
 
 Expr::~Expr()

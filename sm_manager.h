@@ -278,6 +278,8 @@ public:
 
         std::string primary;
 
+        std::vector<hsql::ColumnDefinition *> checks;
+
         for (int i = 0; i < columns.size(); i++)
             if (columns[i]->type == hsql::ColumnDefinition::PRIMARY)
             {
@@ -290,7 +292,12 @@ public:
                 }
 
                 primary = std::string(columns[i]->name);
-                columns.erase(columns.begin() + i);
+                columns.erase(columns.begin() + (i--));
+            }
+            else if (columns[i]->type == hsql::ColumnDefinition::CHECK)
+            {
+                checks.push_back(columns[i]);
+                columns.erase(columns.begin() + (i--));
             }
 
         for (int i = 0; i < columns.size() - 1; i++)
@@ -305,6 +312,8 @@ public:
 
 
         fo << columns.size() << std::endl;
+
+        int checknum;
 
         for (hsql::ColumnDefinition * it : columns)
         {
@@ -331,10 +340,18 @@ public:
                 case hsql::ColumnDefinition::VARCHAR:
                     fo << "VARCHAR" << " " << it->len << " ";
                     break;
+
             }
 
             fo << it->notnull << " " << (std::string(it->name) == primary) << " " << (std::string(it->name) == primary) << std::endl;
 
+        }
+
+        fo << checks.size() << std::endl;
+
+        for (hsql::ColumnDefinition * it : checks)
+        {
+            fo << "SELECT * FROM " << name << " WHERE " << it->expr->toString() << std::endl;
         }
 
         return Success;
@@ -649,6 +666,19 @@ public:
             sprintf(str + strlen(str), "%s %d %d %d %d\n", type.c_str(), len, notnull, index, primary);
         }
 
+        fi >> n;
+        sprintf(str + strlen(str), "%d\n", n);
+
+        for (int i = 0; i < n; i++)
+        {
+            std::string check;
+            getline(fi, check);
+
+            if (check.empty())getline(fi, check);
+
+            sprintf(str + strlen(str), "%s\n", check.c_str());
+        }
+
         fi.close();
 
         if (!flag)
@@ -743,6 +773,19 @@ public:
             }
 
             sprintf(str + strlen(str), "%s %d %d %d %d\n", type.c_str(), len, notnull, index, primary);
+        }
+
+        fi >> n;
+        sprintf(str + strlen(str), "%d\n", n);
+
+        for (int i = 0; i < n; i++)
+        {
+            std::string check;
+            getline(fi, check);
+
+            if (check.empty())getline(fi, check);
+
+            sprintf(str + strlen(str), "%s\n", check.c_str());
         }
 
         fi.close();

@@ -2,6 +2,7 @@
 #define __CREATE_STATEMENT_H__
 
 #include "SQLStatement.h"
+#include "Expr.h"
 
 namespace hsql
 {
@@ -17,24 +18,36 @@ struct ColumnDefinition
         TINYINT,
         CHAR,
         VARCHAR,
-        PRIMARY
+        PRIMARY,
+        CHECK
     };
 
     ColumnDefinition(char *name, DataType type, bool notnull, int64_t len = 0) :
         name(name),
         type(type),
         notnull(notnull),
-        len(len) {}
+        len(len),
+        expr(NULL) {}
+
+    ColumnDefinition(Expr *expr, DataType type) :
+        name(NULL),
+        type(type),
+        notnull(false),
+        len(0),
+        expr(expr) {}
 
     virtual ~ColumnDefinition()
     {
-        delete name;
+        if (name) delete name;
+
+        if (expr) delete expr;
     }
 
     char *name;
     DataType type;
     bool notnull;
     int64_t len;
+    Expr *expr;
 };
 
 /**

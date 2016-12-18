@@ -202,11 +202,12 @@ enum hsql_tokentype
     SQL_VARCHAR = 379,
     SQL_TINYINT = 380,
     SQL_USE = 381,
-    SQL_EQUALS = 382,
-    SQL_LESS = 383,
-    SQL_GREATER = 384,
-    SQL_NOTNULL = 385,
-    SQL_UMINUS = 386
+    SQL_CHECK = 382,
+    SQL_EQUALS = 383,
+    SQL_LESS = 384,
+    SQL_GREATER = 385,
+    SQL_NOTNULL = 386,
+    SQL_UMINUS = 387
 };
 #endif
 
@@ -255,7 +256,7 @@ union HSQL_STYPE
     std::vector<hsql::Expr *> *expr_vec;
     std::vector<std::vector<hsql::Expr *>*> *expr_vec_vec;
 
-#line 259 "bison_parser.h" /* yacc.c:1909  */
+#line 260 "bison_parser.h" /* yacc.c:1909  */
 };
 # define HSQL_STYPE_IS_TRIVIAL 1
 # define HSQL_STYPE_IS_DECLARED 1

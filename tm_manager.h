@@ -173,7 +173,7 @@ public:
 
         bf::path filename = path / configFile;
         std::ifstream fi(filename.string());
-        int n;
+        int n, m;
         fi >> n;
 
         if (n != int(values.size()))
@@ -274,10 +274,60 @@ public:
             head.push_back(data);
         }
 
+        fi >> m;
+        vector<hsql::Expr *> checks;
+
+        for (int i = 0; i < m; i++)
+        {
+            std::string expr;
+            getline(fi, expr);
+
+            if (expr.empty())getline(fi, expr);
+
+            hsql::SQLParserResult *result = hsql::SQLParser::parseSQLString(expr);
+
+            if (result->isValid)
+            {
+                for (hsql::SQLStatement * stmt : result->statements)
+                {
+                    if (stmt->type() == hsql::kStmtSelect)
+                    {
+                        checks.push_back(((hsql::SelectStatement *)stmt)->whereClause);
+                    }
+                    else
+                    {
+                        fprintf(stderr, "Check expr is error\n");
+                        return Error;
+                    }
+                }
+            }
+            else
+            {
+                fprintf(stderr, "Check expr is error\n");
+                return Error;
+            }
+        }
+
+
+        std::map<string, int> st = makeHeadMap();
+
+        for (hsql::Expr * expr : checks)
+        {
+            bool flag;
+
+            if (expr && check(*expr, st, head, flag) == Error)return Error;
+
+            if (!flag)
+            {
+                fprintf(stderr, "Check exprs equal false\n");
+                return Error;
+            }
+        }
+
         RID rid;
         RC result = rmfh->InsertRec(head, rid);
 
-        for (int i = 0; i < n; i++)if (indexv[i])indexv[i]->InsertEntry(head.get(i), rid);
+        for (int i = 0; i < indexv.size(); i++)if (indexv[i])indexv[i]->InsertEntry(head.get(i), rid);
 
         head.clear();
         return result;
@@ -1165,25 +1215,11 @@ public:
             }
         }
 
-        for (RID rec : rid)
-        {
-            RM_Record record;
-            rmfh->GetRec(rec, record);
-
-            for (int i = 0; i < indexv.size(); i++)if (indexv[i])
-                {
-                    indexv[i]->DeleteEntry(record.get(i), rec);
-                }
-
-            record.clear();
-            rmfh->DeleteRec(rec);
-        }
-
         std::vector<RM_Record> ans(rec.size());
 
         bf::path filename = path / configFile;
         std::ifstream fi(filename.string());
-        int n;
+        int n, m;
         fi >> n;
 
         for (int i = 0; i < n; i++)
@@ -1213,6 +1249,12 @@ public:
                 for (int j = 0; j < rec.size(); j++)ans[j].push_back(rec[j].get(i));
 
                 continue;
+            }
+
+            if (primary)
+            {
+                fprintf(stderr, "Primary Key can't update.\n");
+                return Error;
             }
 
             Type *data;
@@ -1283,12 +1325,77 @@ public:
             for (int j = 0; j < rec.size(); j++)ans[j].push_back(data);
         }
 
+        fi >> m;
+        vector<hsql::Expr *> checks;
+
+        for (int i = 0; i < m; i++)
+        {
+            std::string expr;
+            getline(fi, expr);
+
+            if (expr.empty())getline(fi, expr);
+
+            hsql::SQLParserResult *result = hsql::SQLParser::parseSQLString(expr);
+
+            if (result->isValid)
+            {
+                for (hsql::SQLStatement * stmt : result->statements)
+                {
+                    if (stmt->type() == hsql::kStmtSelect)
+                    {
+                        checks.push_back(((hsql::SelectStatement *)stmt)->whereClause);
+                    }
+                    else
+                    {
+                        fprintf(stderr, "Check expr is error\n");
+                        return Error;
+                    }
+                }
+            }
+            else
+            {
+                fprintf(stderr, "Check expr is error\n");
+                return Error;
+            }
+        }
+
+
+
+        for (hsql::Expr * expr : checks)
+        {
+            for (RM_Record rec : ans)
+            {
+                bool flag;
+
+                if (expr && check(*expr, st, rec, flag) == Error)return Error;
+
+                if (!flag)
+                {
+                    fprintf(stderr, "Check exprs equal false\n");
+                    return Error;
+                }
+            }
+        }
+
+        for (RID rec : rid)
+        {
+            RM_Record record;
+            rmfh->GetRec(rec, record);
+
+            for (int i = 0; i < indexv.size(); i++)if (indexv[i])
+                indexv[i]->DeleteEntry(record.get(i), rec);
+
+            record.clear();
+            rmfh->DeleteRec(rec);
+        }
+
         for (RM_Record rec : ans)
         {
             RID rid;
             rmfh->InsertRec(rec, rid);
 
-            for (int i = 0; i < n; i++)if (indexv[i])indexv[i]->InsertEntry(rec.get(i), rid);
+            for (int i = 0; i < indexv.size(); i++)if (indexv[i])
+                indexv[i]->InsertEntry(rec.get(i), rid);
         }
 
 

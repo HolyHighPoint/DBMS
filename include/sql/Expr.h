@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <memory>
+#include <string>
 
 namespace hsql
 {
@@ -122,6 +123,7 @@ struct Expr
         return isSimpleOp() && op_char == op;
     }
 
+    std::string toString();
 
     /**
      * Static expression constructors

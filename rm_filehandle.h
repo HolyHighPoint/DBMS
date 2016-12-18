@@ -78,15 +78,15 @@ public:
 
             if (type == "INTEGER")
             {
-                data = Type::make(!notnull, 0, -1);
+                data = Type::make(false, 0, -1);
             }
             else if (type == "INT")
             {
-                data = Type::make(!notnull, 0, len);
+                data = Type::make(false, 0, len);
             }
             else if (type == "CHAR" || type == "VARCHAR")
             {
-                data = Type::make(!notnull, "", len);
+                data = Type::make(false, "", len);
             }
 
             head.push_back(data);
