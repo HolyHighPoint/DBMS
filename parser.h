@@ -103,6 +103,20 @@ RC parseSelectStatement(SelectStatement *stmt)
 
     if (stmt->fromTable->type == kTableName)
         return sm->selectRecord(stmt->fromTable->name, *stmt->selectList, stmt->whereClause);
+    else if (stmt->fromTable->type == kTableCrossProduct)
+    {
+        if (stmt->fromTable->list->empty())return Error;
+
+        auto end = (*stmt->fromTable->list)[stmt->fromTable->list->size() - 1];
+
+        for (int i = int(stmt->fromTable->list->size()) - 1; i > 0; i--)
+        {
+            (*stmt->fromTable->list)[i] = (*stmt->fromTable->list)[i - 1];
+        }
+
+        (*stmt->fromTable->list)[0] = end;
+        return sm->selectRecord(*stmt->fromTable->list, *stmt->selectList, stmt->whereClause);
+    }
     else
         return Error;
 }

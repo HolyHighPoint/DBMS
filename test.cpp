@@ -8,15 +8,17 @@
 using namespace std;
 int main(int argc, char *argv[])
 {
+    string query;
+
     if (argc > 1)
     {
         if (!freopen(argv[1], "r", stdin))
         {
-            fprintf(stderr, "File %s not found\n", argv[1]);
+            query = string(argv[1]);
         }
     }
 
-    string query((istreambuf_iterator<char>(cin)), istreambuf_iterator<char>());
+    if (query.empty())query = string((istreambuf_iterator<char>(cin)), istreambuf_iterator<char>());
 
     for (int i = 0; i < query.length(); i++)if (query[i] == '\r')query[i] = ' ';
 

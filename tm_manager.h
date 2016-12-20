@@ -16,11 +16,11 @@ class TM_Manager
 {
 private:
     RM_Manager *rmm;
-    RM_FileHandle *rmfh;
     bf::path path;
+public:
+    RM_FileHandle *rmfh;
     std::map<std::string, IX_Manager *> indexst;
     std::vector<IX_Manager *> indexv;
-public:
     TM_Manager(FileManager *fm, BufPageManager *bpm, bf::path path)
         : path(path)
     {
