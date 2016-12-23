@@ -4,6 +4,8 @@
 #include <boost/filesystem.hpp>
 #include <fstream>
 #include <map>
+#include <regex>
+#include <string>
 #include "sql/statements.h"
 #include "rm_filehandle.h"
 #include "rm_manager.h"
@@ -604,8 +606,68 @@ public:
 
                 break;
 
-                //        case hsql::Expr::NOT:
-                //            break;
+            case hsql::Expr::LIKE:
+            {
+                std::smatch result;
+                std::regex reg("(%)|(_)|(\\[(.+?)\\])|(\\[(!.+?)\\])|(\\[(\\^.+?)\\])|([^\\[_%\\]]+)");
+                std::string str = cright, ans;
+
+                while (std::regex_search(str, result, reg))
+                {
+                    if (!result.prefix().str().empty())
+                    {
+                        fprintf(stderr, "Like Expr is error.\n");
+                        return Error;
+                    }
+
+                    for (size_t i = 0; i < result.size(); ++i)
+                    {
+                        if (result.str(i).empty())continue;
+
+                        switch (i)
+                        {
+                            case 1:
+                                ans += ".+";
+                                break;
+
+                            case 2:
+                                ans += ".";
+                                break;
+
+                            case 4:
+                                ans += "[" + result.str(i) + "]";
+                                break;
+
+                            case 6:
+                                ans += "[^" + result.str(i).substr(1) + "]";
+                                break;
+
+                            case 8:
+                                ans += "[" + result.str(i) + "]";
+                                break;
+
+                            case 9:
+                                ans += result.str(i);
+                                break;
+                        }
+                    }
+
+                    str = result.suffix().str();
+                }
+
+                try
+                {
+                    std::regex r(ans);
+                    flag = std::regex_match(cleft, r);
+                }
+                catch (std::regex_error e)
+                {
+                    fprintf(stderr, "Like Expr is error.\n");
+                    return Error;
+                }
+            }
+            break;
+
             default:
                 fprintf(stderr, "The Expr Operation is error.\n");
                 return Error;

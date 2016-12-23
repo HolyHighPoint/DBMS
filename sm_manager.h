@@ -1033,7 +1033,14 @@ public:
                         }
 
                         if (!f)
-                            tmp = sleft;
+                        {
+                            for (auto lit : sleft)
+                            {
+                                std::map<std::string, RID> tmp = rit;
+                                tmp.insert(lit.begin(), lit.end());
+                                ans.insert(tmp);
+                            }
+                        }
                         else
                         {
                             for (auto lit : tmp)
