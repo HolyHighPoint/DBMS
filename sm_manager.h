@@ -1568,7 +1568,7 @@ public:
                         }
 
                         Type *t = rec.get(it->second);
-                        t->print();
+//                        t->print();
 
                         if (dynamic_cast<Type_int *>(t) == NULL)
                         {
@@ -1608,13 +1608,13 @@ public:
                 switch (expr->type)
                 {
                     case hsql::kExprStar:
-                        for (int i = 0; i < starsize; i++)printf("|  | ");
+//                        for (int i = 0; i < starsize; i++)printf("|  | ");
 
                         break;
 
                     case hsql::kExprColumnRef:
 
-                        printf("|  | ");
+//                        printf("|  | ");
 
                         break;
 
