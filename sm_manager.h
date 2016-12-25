@@ -1638,6 +1638,10 @@ public:
                         {
                             printf("| %s(%s.%s) = %d | ", expr->name, expr->expr->table, expr->expr->name, mi[make_pair(expr->expr->table, expr->expr->name)]);
                         }
+                        else if (f == "NUM")
+                        {
+                            printf("| %s(%s.%s) = %d | ", expr->name, expr->expr->table, expr->expr->name, num[make_pair(expr->expr->table, expr->expr->name)]);
+                        }
                         else
                         {
                             fprintf(stderr, "Unsupport function %s\n", expr->name);

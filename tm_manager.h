@@ -1237,6 +1237,10 @@ public:
                             {
                                 printf("| %s(%s) = %d | ", expr->name, expr->expr->name, mi[std::string(expr->expr->name)]);
                             }
+                            else if (f == "NUM")
+                            {
+                                printf("| %s(%s) = %d | ", expr->name, expr->expr->name, num[std::string(expr->expr->name)]);
+                            }
                             else
                             {
                                 fprintf(stderr, "Unsupport function %s\n", expr->name);
