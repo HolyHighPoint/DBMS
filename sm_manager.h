@@ -1485,7 +1485,7 @@ public:
 
         std::map<pair<std::string, std::string>, int>mi, ma, num;
         std::map<pair<std::string, std::string>, long long>sum;
-        bool func = false;
+        bool func = false, newline = false;
         int starsize = 0;
 
         for (auto st : set)
@@ -1517,6 +1517,7 @@ public:
                             rec.clear();
                         }
 
+                        newline = true;
                         break;
 
                     case hsql::kExprColumnRef:
@@ -1542,6 +1543,7 @@ public:
 
                         Type *t = rec.get(it->second);
                         t->print();
+                        newline = true;
                     }
                     break;
 
@@ -1598,7 +1600,7 @@ public:
                 }
             }
 
-            printf("\n");
+            if (newline)printf("\n");
         }
 
         if (func)

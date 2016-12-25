@@ -1129,7 +1129,7 @@ public:
 
             std::map<std::string, int>mi, ma, num;
             std::map<std::string, long long>sum;
-            bool func = false;
+            bool func = false, newline = false;
 
             for (RM_Record rec : ans)
             {
@@ -1139,6 +1139,7 @@ public:
                     {
                         case hsql::kExprStar:
                             rec.print();
+                            newline = true;
                             break;
 
                         case hsql::kExprColumnRef:
@@ -1153,6 +1154,7 @@ public:
 
                             Type *t = rec.get(it->second);
                             t->print();
+                            newline = true;
                         }
                         break;
 
@@ -1197,7 +1199,7 @@ public:
                     }
                 }
 
-                printf("\n");
+                if (newline)printf("\n");
             }
 
             if (func)
