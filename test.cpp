@@ -8,7 +8,7 @@
 using namespace std;
 int main(int argc, char *argv[])
 {
-    string query;
+    string query, usequery;
 
     if (argc > 1)
     {
@@ -19,6 +19,17 @@ int main(int argc, char *argv[])
     }
 
     if (query.empty())query = string((istreambuf_iterator<char>(cin)), istreambuf_iterator<char>());
+
+    if (argc > 2)
+    {
+        usequery = "USE DATABASE " + string(argv[2]) + ";";
+        hsql::SQLParserResult *result = hsql::SQLParser::parseSQLString(usequery);
+
+        if (result->isValid)for (hsql::SQLStatement * stmt : result->statements)
+            {
+                RC result = parseStatement(stmt);
+            }
+    }
 
     for (int i = 0; i < query.length(); i++)if (query[i] == '\r')query[i] = ' ';
 

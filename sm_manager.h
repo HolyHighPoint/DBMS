@@ -462,7 +462,7 @@ public:
         return it->second->insertRecord(values);
     }
 
-    RC selectRecord(const char *name, std::vector<hsql::Expr *> &fields, hsql::Expr *wheres)
+    RC selectRecord(const char *name, std::vector<hsql::Expr *> &fields, hsql::Expr *wheres, hsql::OrderDescription *order, hsql::LimitDescription *limit, hsql::GroupByDescription *group)
     {
         if (curdb.empty())
         {
@@ -504,7 +504,7 @@ public:
             it = tbsta.find(path);
         }
 
-        return it->second->selectRecord(fields, wheres);
+        return it->second->selectRecord(fields, wheres, order, limit, group);
 
     }
 

@@ -23,13 +23,13 @@ public:
     }
     bool set(const char *str, int length);
     bool set(int value);
-    bool isStr();
-    bool isInt();
-    virtual int getValue()
+    bool isStr() const;
+    bool isInt() const;
+    virtual int getValue() const
     {
         return 0;
     }
-    virtual const char *getStr()
+    virtual const char *getStr() const
     {
         return NULL;
     }
@@ -132,7 +132,7 @@ public:
         else printf(buf, value);
     }
 
-    int getValue()
+    int getValue() const
     {
         return value;
     }
@@ -199,7 +199,7 @@ public:
         if (!null)printf("| %s | ", str);
         else printf("|  | ");
     }
-    const char *getStr()
+    const char *getStr() const
     {
         return str;
     }
@@ -265,21 +265,21 @@ bool Type::set(int value)
     return false;
 }
 
-bool Type::isStr()
+bool Type::isStr() const
 {
-    if (dynamic_cast<Type_varchar<32>*>(this) != NULL)
+    if (dynamic_cast<const Type_varchar<32>*>(this) != NULL)
     {
         return true;
     }
-    else if (dynamic_cast<Type_varchar<64>*>(this) != NULL)
+    else if (dynamic_cast<const Type_varchar<64>*>(this) != NULL)
     {
         return true;
     }
-    else if (dynamic_cast<Type_varchar<128>*>(this) != NULL)
+    else if (dynamic_cast<const Type_varchar<128>*>(this) != NULL)
     {
         return true;
     }
-    else if (dynamic_cast<Type_varchar<256>*>(this) != NULL)
+    else if (dynamic_cast<const Type_varchar<256>*>(this) != NULL)
     {
         return true;
     }
@@ -289,9 +289,9 @@ bool Type::isStr()
     }
 }
 
-bool Type::isInt()
+bool Type::isInt() const
 {
-    if (dynamic_cast<Type_int *>(this) != NULL)
+    if (dynamic_cast<const Type_int *>(this) != NULL)
     {
         return true;
     }

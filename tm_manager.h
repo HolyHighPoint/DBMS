@@ -1006,7 +1006,7 @@ public:
 
     }
 
-    RC selectRecord(std::vector<hsql::Expr *> &fields, hsql::Expr *wheres)
+    RC selectRecord(std::vector<hsql::Expr *> &fields, hsql::Expr *wheres, hsql::OrderDescription *order, hsql::LimitDescription *limit, hsql::GroupByDescription *group)
     {
         std::map<string, int> st = makeHeadMap();
         std::vector<RM_Record> ans;
@@ -1041,130 +1041,223 @@ public:
             }
         }
 
-        std::map<std::string, int>mi, ma, num;
-        std::map<std::string, long long>sum;
-        bool func = false;
+        std::vector<int> groupV;
 
-        for (RM_Record rec : ans)
+        if (group)
         {
-            for (hsql::Expr * expr : fields)
+            for (hsql::Expr * expr : *group->columns)
             {
-                switch (expr->type)
+                if (expr->type != hsql::kExprColumnRef)
                 {
-                    case hsql::kExprStar:
-                        rec.print();
-                        break;
+                    fprintf(stderr, "Group type is error.\n");
+                    return Error;
+                }
 
-                    case hsql::kExprColumnRef:
-                    {
-                        auto it = st.find(std::string(expr->name));
+                auto it = st.find(expr->name);
 
-                        if (it == st.end())
-                        {
-                            fprintf(stderr, "Column %s is not found.\n", expr->name);
-                            return Error;
-                        }
-
-                        Type *t = rec.get(it->second);
-                        t->print();
-                    }
-                    break;
-
-                    case hsql::kExprFunctionRef:
-                    {
-                        func = true;
-                        auto it = st.find(std::string(expr->expr->name));
-
-                        if (it == st.end())
-                        {
-                            fprintf(stderr, "Column %s is not found.\n", expr->expr->name);
-                            return Error;
-                        }
-
-                        Type *t = rec.get(it->second);
-                        t->print();
-
-                        if (dynamic_cast<Type_int *>(t) == NULL)
-                        {
-                            fprintf(stderr, "Column %s is not a integer.\n", expr->expr->name);
-                            return Error;
-                        }
-
-                        sum[std::string(expr->expr->name)] += ((Type_int *)t)->getValue();
-                        num[std::string(expr->expr->name)] ++;
-
-                        if ((it = ma.find(std::string(expr->expr->name))) == ma.end())
-                            ma.insert(make_pair(std::string(expr->expr->name), ((Type_int *)t)->getValue()));
-                        else
-                            it->second = std::max(it->second, ((Type_int *)t)->getValue());
-
-                        if ((it = mi.find(std::string(expr->expr->name))) == mi.end())
-                            mi.insert(make_pair(std::string(expr->expr->name), ((Type_int *)t)->getValue()));
-                        else
-                            it->second = std::min(it->second, ((Type_int *)t)->getValue());
-                    }
-                    break;
-
-                    default:
-                        fprintf(stderr, "Expr type is error.\n");
-                        return Error;
+                if (it != st.end())
+                {
+                    groupV.push_back(it->second);
+                }
+                else
+                {
+                    fprintf(stderr, "Column %s is not found.\n", expr->name);
                 }
             }
-
-            printf("\n");
         }
 
-        if (func)
+        Record_Less less(groupV);
+        Record_Equal equal(groupV);
+        std::stable_sort(ans.begin(), ans.end(), less);
+        std::vector<RM_Record> ans2 = ans;
+        ans.clear();
+
+        for (int i = 0; i <= ans2.size(); i++)
         {
-            for (hsql::Expr * expr : fields)
+            if (i != ans2.size() && (ans.empty() || equal(ans[0], ans2[i])))
             {
-                switch (expr->type)
-                {
-                    case hsql::kExprStar:
-                        for (int i = 0; i < ans[0].getSize(); i++)printf("|  | ");
+                ans.push_back(ans2[i]);
+                continue;
+            }
 
-                        break;
-
-                    case hsql::kExprColumnRef:
-
-                        printf("|  | ");
-
-                        break;
-
-                    case hsql::kExprFunctionRef:
-                    {
-                        std::string f = expr->name;
-
-                        if (f == "AVG")
-                        {
-                            printf("| %s(%s) = %.2lf | ", expr->name, expr->expr->name, double(sum[std::string(expr->expr->name)]) / num[std::string(expr->expr->name)]);
-                        }
-                        else if (f == "SUM")
-                        {
-                            printf("| %s(%s) = %lld | ", expr->name, expr->expr->name, sum[std::string(expr->expr->name)]);
-                        }
-                        else if (f == "MAX")
-                        {
-                            printf("| %s(%s) = %d | ", expr->name, expr->expr->name, ma[std::string(expr->expr->name)]);
-                        }
-                        else if (f == "MIN")
-                        {
-                            printf("| %s(%s) = %d | ", expr->name, expr->expr->name, mi[std::string(expr->expr->name)]);
-                        }
-                        else
-                        {
-                            fprintf(stderr, "Unsupport function %s\n", expr->name);
-                        }
-                    }
-                    break;
-
-                    default:
-                        fprintf(stderr, "Expr type is error.\n");
-                        return Error;
-                }
+            for (int k : groupV)
+            {
+                ans[0].get(k)->print();
             }
 
             printf("\n");
+
+            if (order && order->expr->type == hsql::kExprColumnRef)
+            {
+                auto it = st.find(order->expr->name);
+
+                if (it != st.end())
+                {
+                    Record_Less rl(it->second);
+                    std::stable_sort(ans.begin(), ans.end(), rl);
+                }
+                else
+                {
+                    fprintf(stderr, "Column %s is not found.\n", order->expr->name);
+                    return Error;
+                }
+
+                if (order->type == hsql::kOrderDesc)
+                {
+                    std::reverse(ans.begin(), ans.end());
+                }
+            }
+
+            if (limit)
+            {
+                if (limit->offset == hsql::kNoOffset)limit->offset = 0;
+
+                if (limit->limit == hsql::kNoLimit)limit->limit = ans.size();
+
+                if (ans.size() < limit->offset)
+                {
+                    ans.clear();
+                }
+                else
+                {
+                    std::vector<RM_Record>ans2 = ans;
+                    ans.clear();
+
+                    for (int i = limit->offset; i < ans2.size() && i < limit->offset + limit->limit; i++)ans.push_back(ans2[i]);
+                }
+            }
+
+            std::map<std::string, int>mi, ma, num;
+            std::map<std::string, long long>sum;
+            bool func = false;
+
+            for (RM_Record rec : ans)
+            {
+                for (hsql::Expr * expr : fields)
+                {
+                    switch (expr->type)
+                    {
+                        case hsql::kExprStar:
+                            rec.print();
+                            break;
+
+                        case hsql::kExprColumnRef:
+                        {
+                            auto it = st.find(std::string(expr->name));
+
+                            if (it == st.end())
+                            {
+                                fprintf(stderr, "Column %s is not found.\n", expr->name);
+                                return Error;
+                            }
+
+                            Type *t = rec.get(it->second);
+                            t->print();
+                        }
+                        break;
+
+                        case hsql::kExprFunctionRef:
+                        {
+                            func = true;
+                            auto it = st.find(std::string(expr->expr->name));
+
+                            if (it == st.end())
+                            {
+                                fprintf(stderr, "Column %s is not found.\n", expr->expr->name);
+                                return Error;
+                            }
+
+                            Type *t = rec.get(it->second);
+                            t->print();
+
+                            if (dynamic_cast<Type_int *>(t) == NULL)
+                            {
+                                fprintf(stderr, "Column %s is not a integer.\n", expr->expr->name);
+                                return Error;
+                            }
+
+                            sum[std::string(expr->expr->name)] += ((Type_int *)t)->getValue();
+                            num[std::string(expr->expr->name)] ++;
+
+                            if ((it = ma.find(std::string(expr->expr->name))) == ma.end())
+                                ma.insert(make_pair(std::string(expr->expr->name), ((Type_int *)t)->getValue()));
+                            else
+                                it->second = std::max(it->second, ((Type_int *)t)->getValue());
+
+                            if ((it = mi.find(std::string(expr->expr->name))) == mi.end())
+                                mi.insert(make_pair(std::string(expr->expr->name), ((Type_int *)t)->getValue()));
+                            else
+                                it->second = std::min(it->second, ((Type_int *)t)->getValue());
+                        }
+                        break;
+
+                        default:
+                            fprintf(stderr, "Expr type is error.\n");
+                            return Error;
+                    }
+                }
+
+                printf("\n");
+            }
+
+            if (func)
+            {
+                for (hsql::Expr * expr : fields)
+                {
+                    switch (expr->type)
+                    {
+                        case hsql::kExprStar:
+                            for (int i = 0; i < ans[0].getSize(); i++)printf("|  | ");
+
+                            break;
+
+                        case hsql::kExprColumnRef:
+
+                            printf("|  | ");
+
+                            break;
+
+                        case hsql::kExprFunctionRef:
+                        {
+                            std::string f = expr->name;
+
+                            if (f == "AVG")
+                            {
+                                printf("| %s(%s) = %.2lf | ", expr->name, expr->expr->name, double(sum[std::string(expr->expr->name)]) / num[std::string(expr->expr->name)]);
+                            }
+                            else if (f == "SUM")
+                            {
+                                printf("| %s(%s) = %lld | ", expr->name, expr->expr->name, sum[std::string(expr->expr->name)]);
+                            }
+                            else if (f == "MAX")
+                            {
+                                printf("| %s(%s) = %d | ", expr->name, expr->expr->name, ma[std::string(expr->expr->name)]);
+                            }
+                            else if (f == "MIN")
+                            {
+                                printf("| %s(%s) = %d | ", expr->name, expr->expr->name, mi[std::string(expr->expr->name)]);
+                            }
+                            else
+                            {
+                                fprintf(stderr, "Unsupport function %s\n", expr->name);
+                            }
+                        }
+                        break;
+
+                        default:
+                            fprintf(stderr, "Expr type is error.\n");
+                            return Error;
+                    }
+                }
+
+                printf("\n");
+            }
+
+            printf("\n");
+
+            ans.clear();
+
+            if (i < ans2.size())ans.push_back(ans2[i]);
         }
 
         printf("\n");

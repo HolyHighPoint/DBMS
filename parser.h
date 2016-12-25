@@ -102,7 +102,7 @@ RC parseSelectStatement(SelectStatement *stmt)
     SM_Manager *sm = SM_Manager::getInstance();
 
     if (stmt->fromTable->type == kTableName)
-        return sm->selectRecord(stmt->fromTable->name, *stmt->selectList, stmt->whereClause);
+        return sm->selectRecord(stmt->fromTable->name, *stmt->selectList, stmt->whereClause, stmt->order, stmt->limit, stmt->groupBy);
     else if (stmt->fromTable->type == kTableCrossProduct)
     {
         if (stmt->fromTable->list->empty())return Error;

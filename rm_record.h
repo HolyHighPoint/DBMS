@@ -30,6 +30,11 @@ public:
         return total[n];
     }
 
+    Type const *constget(int n) const
+    {
+        return total[n];
+    }
+
     int getSize() const
     {
         return total.size();
@@ -167,5 +172,89 @@ public:
 
         //printf("\n");
     }
+};
+
+class Record_Less
+{
+    std::vector<int> vn;
+public:
+    Record_Less(int n)
+    {
+        vn.push_back(n);
+    }
+
+    Record_Less(const std::vector<int> &_vn)
+    {
+        vn = _vn;
+    }
+
+    bool operator() (const RM_Record &x, const RM_Record &y) const
+    {
+        for (auto n : vn)
+        {
+            Type const *xt = x.constget(n), *yt = y.constget(n);
+
+            if (xt->isInt() && yt->isInt())
+            {
+                int x = xt->getValue(), y = yt->getValue();
+
+                if (x < y)return true;
+
+                if (x > y)return false;
+            }
+
+            if (xt->isStr() && yt->isStr())
+            {
+                int x = strcmp(xt->getStr(), yt->getStr());
+
+                if (x < 0)return true;
+
+                if (x > 0)return false;
+            }
+        }
+
+        return false;
+    }
+
+};
+
+class Record_Equal
+{
+    std::vector<int> vn;
+public:
+    Record_Equal(int n)
+    {
+        vn.push_back(n);
+    }
+
+    Record_Equal(const std::vector<int> &_vn)
+    {
+        vn = _vn;
+    }
+
+    bool operator() (const RM_Record &x, const RM_Record &y) const
+    {
+        for (auto n : vn)
+        {
+            Type const *xt = x.constget(n), *yt = y.constget(n);
+
+            if (xt->isInt() && yt->isInt())
+            {
+                int x = xt->getValue(), y = yt->getValue();
+
+                if (x != y)return false;
+            }
+
+            if (xt->isStr() && yt->isStr())
+            {
+                int x = strcmp(xt->getStr(), yt->getStr());
+
+                if (x != 0)return false;
+            }
+        }
+
+        return true;
+    }
+
 };
 #endif
