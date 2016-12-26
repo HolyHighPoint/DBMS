@@ -11,6 +11,7 @@ import time
 import webbrowser
 from collections import namedtuple, OrderedDict
 from functools import wraps
+from MyDataset import MyDataset
 
 # Py3k compat.
 if sys.version_info[0] == 3:
@@ -176,12 +177,14 @@ class SqliteDataSet(DataSet):
 
 @app.route('/')
 def index():
+    for table in mydataset.tables:
+        dataset[table]
     return render_template('index.html')
 
 def require_table(fn):      
     @wraps(fn)
     def inner(table, *args, **kwargs):
-        if table not in dataset.tables:
+        if table not in mydataset.tables:#dataset.tables:
             abort(404)
         return fn(table, *args, **kwargs)
     return inner
@@ -193,7 +196,7 @@ def table_create():   #修改建表方法
         flash('Table name is required.', 'danger')
         return redirect(request.form.get('redirect') or url_for('index'))
 
-    dataset[table]  #改为建空表的语句
+    mydataset.create_table(table)#dataset[table]  #改为建空表的语句
     return redirect(url_for('table_import', table=table))
 
 @app.route('/<table>/')
@@ -207,14 +210,14 @@ def table_structure(table):
         [table, 'table']).fetchone()[0]
     return render_template(
         'table_structure.html',
-        columns=dataset.get_columns(table),  #读取表示属性的列表，每个属性是一个元组
-        ds_table=ds_table,   #这一项改成空值""传给前端貌似也没什么影响
-        foreign_keys=dataset.get_foreign_keys(table),  #读取外键
-        indexes=dataset.get_indexes(table),   #读取索引
-        model_class=model_class,  #这一项改成空值仿佛也没什么影响
+        columns=mydataset.get_columns(table),#dataset.get_columns(table),  #读取表示属性的列表，每个属性是一个元组
+        ds_table="",#ds_table,   #这一项改成空值""传给前端貌似也没什么影响
+        foreign_keys=[],#dataset.get_foreign_keys(table),  #读取外键
+        indexes=mydataset.get_indexes(table),   #读取索引
+        model_class="",#model_class,  #这一项改成空值仿佛也没什么影响
         table=table,       #字符串
-        table_sql=table_sql,   #改为得到table_sql的语句
-        triggers=dataset.get_triggers(table))
+        table_sql=mydataset.get_table_sql(table),#table_sql,   #改为得到table_sql的语句
+        triggers=[])#dataset.get_triggers(table))
 
 def get_request_data():
     if request.method == 'POST':
@@ -316,16 +319,18 @@ def add_index(table):
     indexed_columns = request_data.getlist('indexed_columns')
     unique = bool(request_data.get('unique'))
 
-    columns = dataset.get_columns(table)        #修改：从数据库中得到属性的列表
+    columns = mydataset.get_columns(table)        #修改：从数据库中得到属性的列表
     
     if request.method == 'POST':
+        print(indexed_columns)
         if indexed_columns:
-            migrate(                            #修改：建立一个索引
-                migrator.add_index(
-                    table,
-                    indexed_columns,
-                    unique))
-            flash('Index created successfully.', 'success')
+            #migrate(                            #修改：建立一个索引
+                #migrator.add_index(
+                    #table,
+                    #indexed_columns,
+                    #unique))
+            mydataset.add_index(table,indexed_columns,unique)  #added
+            flash('Index created successfully.', 'success') 
             return redirect(url_for('table_structure', table=table))
         else:
             flash('One or more columns must be selected.', 'danger')
@@ -342,12 +347,13 @@ def add_index(table):
 def drop_index(table):
     request_data = get_request_data()
     name = request_data.get('name', '')
-    indexes = dataset.get_indexes(table)        #修改：从数据库中得到索引的列表
+    indexes = mydataset.get_indexes(table)        #修改：从数据库中得到索引的列表
     index_names = [index.name for index in indexes]
 
     if request.method == 'POST':
         if name in index_names:
-            migrate(migrator.drop_index(table, name))       #修改：删除一个索引
+            #migrate(migrator.drop_index(table, name))       #修改：删除一个索引
+            mydataset.drop_index(table,name)  #added
             flash('Index "%s" was dropped successfully!' % name, 'success')
             return redirect(url_for('table_structure', table=table))
         else:
@@ -389,8 +395,8 @@ def table_content(table):
     page_number = request.args.get('page') or ''
     page_number = int(page_number) if page_number.isdigit() else 1
 
-    ds_table = dataset[table]                   #修改：从数据库中拿出整个数据库
-    total_rows = ds_table.all().count()         #调用函数：总行数
+    #ds_table = dataset[table]                   #修改：从数据库中拿出整个数据库
+    total_rows = mydataset.count(table)#ds_table.all().count()         #调用函数：总行数
     rows_per_page = app.config['ROWS_PER_PAGE']                         #每页行数
     total_pages = int(math.ceil(total_rows / float(rows_per_page)))     #总页数
     # Restrict bounds.
@@ -400,32 +406,36 @@ def table_content(table):
     previous_page = page_number - 1 if page_number > 1 else None
     next_page = page_number + 1 if page_number < total_pages else None
 
-    print(ds_table.all())
-    query = ds_table.all().paginate(page_number, rows_per_page)  #该方法需要重写
+    query = mydataset.get_content(table,page_number,rows_per_page)#ds_table.all().paginate(page_number, rows_per_page)  #该方法需要重写
 
-    ordering = request.args.get('ordering')
-    if ordering:
-        field = ds_table.model_class._meta.columns[ordering.lstrip('-')]
-        if ordering.startswith('-'):
-            field = field.desc()
-        query = query.order_by(field)
+   # ordering = request.args.get('ordering')
+   # if ordering:
+   #     field = ds_table.model_class._meta.columns[ordering.lstrip('-')]
+   #     if ordering.startswith('-'):
+   #         field = field.desc()
+   #     query = query.order_by(field)
 
-    field_names = ds_table.columns
-    model_meta = ds_table.model_class._meta
-    try:
-        fields = model_meta.sorted_fields
-    except AttributeError:
-        fields = model_meta.get_fields()
-    columns = [field.db_column for field in fields]
+   # field_names = ds_table.columns
+   # model_meta = ds_table.model_class._meta
+   # try:
+   #     fields = model_meta.sorted_fields
+   # except AttributeError:
+   #     fields = model_meta.get_fields()
+   # columns = [field.db_column for field in fields]
 
-    print("columus=",columns,", ds_table=",ds_table,", field_names=",field_names,", next_page=",next_page,", ordering=",ordering,", page_number=",page_number,", previous_page=",previous_page,", query=",query,", table=",table,", total_pages=",total_pages,", total_rows=",total_rows)
+    columns=mydataset.get_columns(table)
+    cnames=([])
+    for column in columns:
+        cnames.append(column[0])     #added
+
+
     return render_template(
         'table_content.html',
-        columns=columns,
-        ds_table=ds_table,    #重要，需要改写，前端将调用ds_table.all().count()方法
-        field_names=field_names,
+        columns=cnames,#columns,
+        #ds_table=ds_table,    #重要，需要改写，前端将调用ds_table.all().count()方法
+        field_names=cnames,#field_names,
         next_page=next_page,
-        ordering=ordering,
+        #ordering=ordering,
         page=page_number,
         previous_page=previous_page,
         query=query,
@@ -446,14 +456,23 @@ def table_query(table):
         elif 'export_csv' in request.form:
             return export(table, sql, 'csv')
 
-        try:
-            cursor = dataset.query(sql)
-        except Exception as exc:
-            error = str(exc)
-        else:
-            data = cursor.fetchall()[:app.config['MAX_RESULT_SIZE']]
-            data_description = cursor.description
-            row_count = cursor.rowcount
+        #try:
+        #    cursor = dataset.query(sql)
+        #except Exception as exc:
+        #    error = str(exc)
+        #else:
+        #    data = cursor.fetchall()[:app.config['MAX_RESULT_SIZE']]
+        #    data_description = cursor.description
+        #    row_count = cursor.rowcount
+        get_tuple=mydataset.execute_query(sql)
+        data=get_tuple[1]
+        error=get_tuple[2]
+        row_count=get_tuple[0]
+        data_description=([])
+        for i in range(len(data[0])):
+            dd=("",None,None,None,None,None,None)
+            data_description.append(dd)
+        
     else:
         if request.args.get('sql'):
             sql = request.args.get('sql')
@@ -540,8 +559,9 @@ def table_import(table):
 @require_table
 def drop_table(table):
     if request.method == 'POST':
-        model_class = dataset[table].model_class
-        model_class.drop_table()
+        #model_class = dataset[table].model_class
+        #model_class.drop_table()
+        mydataset.drop_table(table)   #added
         flash('Table "%s" dropped successfully.' % table, 'success')
         return redirect(url_for('index'))
 
@@ -676,10 +696,12 @@ def main():
         die('Error: missing required path to database file.')
 
     db_file = args[0]
+    global mydataset
     global dataset
     global migrator
     dataset = SqliteDataSet('sqlite:///%s' % db_file)
     migrator = dataset._migrator
+    mydataset=MyDataset(db_file)
     if options.browser:
         open_browser_tab(options.host, options.port)
     app.run(host=options.host, port=options.port, debug=options.debug)
