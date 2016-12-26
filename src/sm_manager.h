@@ -323,11 +323,11 @@ public:
             switch (it->type)
             {
                 case hsql::ColumnDefinition::INTEGER:
-                    fo << "INTEGER" << -1 << " ";
+                    fo << "INTEGER " << -1 << " ";
                     break;
 
                 case hsql::ColumnDefinition::TINYINT:
-                    fo << "INTEGER" << -1 << " ";
+                    fo << "INTEGER " << -1 << " ";
                     break;
 
                 case hsql::ColumnDefinition::INT:

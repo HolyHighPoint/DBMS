@@ -10,14 +10,9 @@ def exe(command,delay=3):
     wr.write(command)
     wr.close()
     fi=open(os.path.join('sqlcommand.txt'),'r')
-    p=subprocess.Popen("nc 138.128.213.58 2333",stdin=fi)
-    time.sleep(3)
-    p.kill()
-    time.sleep(delay)
     fo=open(os.path.join('sqlreturn.txt'),'w')
-    p=subprocess.Popen("nc 138.128.213.58 2334",stdout=fo)
-    time.sleep(delay)
-    p.kill()
+    p=subprocess.Popen("./DBMS",stdin=fi,stdout=fo)
+    p.wait()
     rd=open('sqlreturn.txt','r')
     s=rd.readlines()
     errMsg=""
@@ -25,6 +20,8 @@ def exe(command,delay=3):
 
 class MyDataset:
     def __init__(self,database):
+        nPos = database.index('.db')
+        database = database[0:7]
         self.database=database
         command='''USE DATABASE '''+database+''' ;'''
         command=command+'''  SHOW TABLES;'''
