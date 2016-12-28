@@ -469,9 +469,10 @@ def table_query(table):
         error=get_tuple[2]
         row_count=get_tuple[0]
         data_description=([])
-        for i in range(len(data[0])):
-            dd=("",None,None,None,None,None,None)
-            data_description.append(dd)
+        if (len(data)>0):
+            for i in range(len(data[0])):
+                dd=("",None,None,None,None,None,None)
+                data_description.append(dd)
         
     else:
         if request.args.get('sql'):
